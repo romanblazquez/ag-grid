@@ -1,0 +1,36 @@
+<div class="shell-feature-container">
+  <header class="feature-header">
+    <h1>Trade Platform</h1>
+    <p class="subtitle">Real-time trading dashboard with live updates</p>
+  </header>
+
+  <section class="stats-section">
+    <lib-stats-card
+      title="Total Trades"
+      [value]="totalTrades"
+      icon="📊"
+    ></lib-stats-card>
+
+    <lib-stats-card
+      title="Buy Orders"
+      [value]="buyCount"
+      icon="📈"
+      trend="up"
+    ></lib-stats-card>
+
+    <lib-stats-card
+      title="Sell Orders"
+      [value]="sellCount"
+      icon="📉"
+      trend="down"
+    ></lib-stats-card>
+  </section>
+
+  <section class="trade-section">
+    <lib-trade-grid
+      [rowData]="tradeData"
+      (cancelTrade)="onCancelTrade($event)"
+      (cancelSelectedTrades)="onCancelSelectedTrades($event)"
+    ></lib-trade-grid>
+  </section>
+</div>

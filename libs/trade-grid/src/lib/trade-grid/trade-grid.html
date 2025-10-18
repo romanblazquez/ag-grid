@@ -1,0 +1,15 @@
+<div class="trade-grid-container">
+  <ag-grid-angular
+    style="width: 100%; height: 100%;"
+    [theme]="theme"
+    [rowData]="rowData"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    [pagination]="true"
+    [paginationPageSize]="50"
+    [rowSelection]="rowSelectionOptions"
+    [animateRows]="true"
+    [getContextMenuItems]="getContextMenuItems"
+    (gridReady)="onGridReady($event)"
+  />
+</div>

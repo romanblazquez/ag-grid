@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NxWelcome } from './nx-welcome';
+import { ShellFeature } from '@trade-platform/shell/feature';
 
 @Component({
-  imports: [NxWelcome, RouterModule],
+  imports: [ShellFeature, RouterModule],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
-  protected title = 'shell';
+  protected title = 'Trade Platform';
 }

@@ -1,0 +1,12 @@
+<div class="stats-card">
+  <div class="stats-card-header">
+    <span class="stats-card-icon" *ngIf="icon">{{ icon }}</span>
+    <span class="stats-card-title">{{ title }}</span>
+  </div>
+  <div class="stats-card-value">{{ value }}</div>
+  <div class="stats-card-trend" *ngIf="trend && trendValue">
+    <span [class]="'trend-' + trend">
+      {{ trend === 'up' ? '↑' : '↓' }} {{ trendValue }}
+    </span>
+  </div>
+</div>

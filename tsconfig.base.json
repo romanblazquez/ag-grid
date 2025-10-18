@@ -14,7 +14,16 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@trade-platform/shared/data-access": [
+        "libs/shared/data-access/src/index.ts"
+      ],
+      "@trade-platform/shared/ui-components": [
+        "libs/shared/ui-components/src/index.ts"
+      ],
+      "@trade-platform/shell/feature": ["libs/shell/feature/src/index.ts"],
+      "@trade-platform/trade-grid": ["libs/trade-grid/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
