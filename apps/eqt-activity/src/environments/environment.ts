@@ -2,7 +2,7 @@
 export const environment = {
   production: false,
   // AG Grid license key - will be undefined in development (safe)
-  agGridLicenseKey: undefined
+  agGridLicenseKey: undefined,
 };
 
 // Make environment available globally for the license utility

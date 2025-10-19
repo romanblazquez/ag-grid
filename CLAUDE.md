@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an **Nx monorepo** for a trading platform built with **Angular 20** and **TypeScript**. The platform features a shell application that displays trade data using **AG Grid Community** edition.
+This is an **Nx monorepo** for an EQT Activity trading platform built with **Angular 20** and **TypeScript**. The platform features an eqt-activity application that displays trade data using **AG Grid Enterprise** edition.
 
 ## Architecture
 
@@ -14,8 +14,8 @@ The codebase follows Nx monorepo best practices with a domain-driven library org
 
 ```
 apps/
-  shell/                    # Application shell - minimal host/container
-  shell-e2e/               # E2E tests for shell app
+  eqt-activity/             # Application - EQT Activity trading platform
+  eqt-activity-e2e/        # E2E tests for eqt-activity app
 
 libs/
   trade-grid/              # Feature library: AG Grid-based trade grid component
@@ -26,13 +26,7 @@ libs/
     ui-components/         # Shared reusable UI components
 ```
 
-**Why "shell"?** The shell app follows the "application shell" pattern - it's a thin container responsible for:
-- Bootstrapping Angular
-- Top-level routing configuration
-- Loading feature libraries
-- Minimal application-level logic
-
-The actual business logic lives in feature libraries (`libs/shell/feature`), keeping the app itself lightweight and focused on orchestration.
+**About the Application:** The eqt-activity app is the main trading platform application. It provides a comprehensive trading dashboard with real-time trade data, advanced filtering, grouping capabilities, and professional UI components designed for financial trading environments.
 
 ### Library Types & Conventions
 
@@ -88,11 +82,11 @@ ngOnInit() {
 ### Development
 
 ```bash
-# Serve the shell application (dev server)
-npx nx serve shell
+# Serve the eqt-activity application (dev server)
+npx nx serve eqt-activity
 
-# Build the shell application for production
-npx nx build shell
+# Build the eqt-activity application for production
+npx nx build eqt-activity
 
 # Build a specific library
 npx nx build trade-grid
@@ -109,14 +103,14 @@ npx nx graph
 npx nx run-many -t test
 
 # Test a specific project
-npx nx test shell
+npx nx test eqt-activity
 npx nx test trade-grid
 
 # Run tests in watch mode
-npx nx test shell --watch
+npx nx test eqt-activity --watch
 
 # Run tests with coverage
-npx nx test shell --coverage
+npx nx test eqt-activity --coverage
 npx nx run-many -t test --configuration=ci  # CI mode with coverage
 ```
 
@@ -127,24 +121,24 @@ npx nx run-many -t test --configuration=ci  # CI mode with coverage
 npx nx run-many -t lint
 
 # Lint a specific project
-npx nx lint shell
+npx nx lint eqt-activity
 npx nx lint trade-grid
 
 # Auto-fix linting issues
-npx nx lint shell --fix
+npx nx lint eqt-activity --fix
 ```
 
 ### E2E Testing
 
 ```bash
 # Run E2E tests (Cypress)
-npx nx e2e shell-e2e
+npx nx e2e eqt-activity-e2e
 
 # Open Cypress UI
-npx nx open-cypress shell-e2e
+npx nx open-cypress eqt-activity-e2e
 
 # Run E2E in CI mode
-npx nx e2e-ci shell-e2e
+npx nx e2e-ci eqt-activity-e2e
 ```
 
 ### Code Generation
@@ -170,7 +164,7 @@ npx nx list @nx/angular
 
 ```bash
 # Show all available targets for a project
-npx nx show project shell
+npx nx show project eqt-activity
 
 # List all projects
 npx nx show projects
@@ -184,7 +178,7 @@ npx nx affected:graph
 - **Framework**: Angular 20 (standalone components)
 - **Language**: TypeScript 5.9
 - **Build System**: Nx 21.6.5 with Angular CLI 20
-- **Grid Component**: AG Grid Community 34.2.0 + AG Grid Angular
+- **Grid Component**: AG Grid Enterprise 34.2.0 + AG Grid Angular
 - **Styling**: SCSS
 - **Testing**: Jest + Cypress
 - **Linting**: ESLint 9 + Angular ESLint + Prettier
@@ -326,3 +320,326 @@ If you see theming errors, ensure:
 1. No CSS imports in `styles.scss`
 2. Using `[theme]` property binding in template
 3. Theme is imported from `ag-grid-community`
+
+## Recent Enhancements (Session Work)
+
+### AG Grid Enterprise Integration & Feature Enhancements
+
+This section documents significant enhancements made to the trade grid system, including AG Grid Enterprise features, UI improvements, and architectural refinements.
+
+#### 1. AG Grid Enterprise Migration
+
+**Overview**: Upgraded from AG Grid Community to Enterprise edition with proper license management.
+
+**Key Changes:**
+- **Package**: Installed `ag-grid-enterprise@34.2.0`
+- **Module Registration**: Added `AllEnterpriseModule` alongside `AllCommunityModule`
+- **License Management**: Created secure license handling system (`libs/shared/ui-components/src/lib/license/ag-grid-license.ts`)
+- **Environment Integration**: License key stored in environment variables with development override support
+
+**Enterprise Features Enabled:**
+- Row Grouping & Aggregation
+- Enhanced Context Menu
+- Advanced Filtering
+- Column Sidebar with tools panel
+- Export functionality (Excel/CSV)
+
+**License Setup:**
+```typescript
+// Automatic license setup in main.ts
+import { setupAgGridLicense } from '@trade-platform/shared/ui-components';
+await setupAgGridLicense({ forceInDevelopment: true });
+```
+
+#### 2. Data Aggregation with "Cancelled By" Column
+
+**Feature**: Added comprehensive person data aggregation showing who cancelled trades.
+
+**Implementation:**
+- **Custom Cell Renderer**: `CancelledByCellComponent` with Material Design badges
+- **Person Service Interface**: Standardized person data access pattern
+- **Visual Design**: Color-coded initials with hover tooltips showing full names
+- **Group Support**: Handles both individual rows and grouped data display
+- **Fallback System**: Graceful handling of unknown persons with "Unknown (ID)" display
+
+**Technical Details:**
+```typescript
+// Person initials with tooltip
+<span [matTooltip]="person.fullName" class="cancelled-by-initials">
+  {{ person.initials }}
+</span>
+
+// Group row detection and handling
+if (this.params.node && this.params.node.group) {
+  // Extract initials from group key
+  const initials = groupKey.split(' ').map(part => part.charAt(0)).join('');
+}
+```
+
+#### 3. Material UI Integration
+
+**Enhancement**: Integrated Angular Material components for professional UI experience.
+
+**Components Added:**
+- **Tooltips**: `MatTooltipModule` for enhanced user guidance
+- **Buttons**: `MatButtonModule` for consistent button styling
+- **Badges**: `MatBadgeModule` for count indicators
+- **Icons**: `MatIconModule` for visual clarity
+
+**Benefits:**
+- Consistent Material Design language
+- Better accessibility with proper ARIA support
+- Professional appearance matching modern web standards
+- Enhanced user experience with interactive feedback
+
+#### 4. Advanced Theme System
+
+**Feature**: Comprehensive theme management with dark, light, and high-contrast options.
+
+**Theme Configuration** (`libs/shared/ui-components/src/lib/themes/ag-grid-themes.ts`):
+
+```typescript
+// Three professionally designed themes
+export const AVAILABLE_THEMES: ThemeConfig[] = [
+  {
+    name: 'dark',
+    theme: tradePlatformDarkTheme,
+    description: 'Dark theme optimized for trading environments'
+  },
+  {
+    name: 'light', 
+    theme: tradePlatformLightTheme,
+    description: 'Light theme for day trading and bright environments'
+  },
+  {
+    name: 'high-contrast',
+    theme: tradePlatformHighContrastTheme,
+    description: 'High contrast theme for maximum readability'
+  }
+];
+```
+
+**Theme Features:**
+- **Dynamic Switching**: Real-time theme changes without page reload
+- **Accessibility**: High contrast options for better readability
+- **Trading Optimized**: Color schemes designed for financial data display
+- **Header Enhancement**: Improved readability with proper contrast ratios
+
+#### 5. Theme-Aware Column Styling
+
+**Problem Solved**: Fixed text visibility issues in light theme where cell text was too light.
+
+**Solution**: Implemented comprehensive theme-aware color system:
+
+```typescript
+// Theme-aware color variables in column configuration
+const buyColor = isDarkTheme ? '#4ade80' : '#16a34a';
+const sellColor = isDarkTheme ? '#f87171' : '#dc2626';
+const defaultColor = isDarkTheme ? '#e5e7eb' : '#0f172a';
+
+// Applied to all cells for proper contrast
+const baseCellStyle = { color: defaultColor };
+```
+
+**Color Specifications:**
+| Element | Dark Theme | Light Theme |
+|---------|------------|-------------|
+| Default Text | `#e5e7eb` (light gray) | `#0f172a` (very dark gray) |
+| Buy/Filled | `#4ade80` (bright green) | `#16a34a` (dark green) |
+| Sell | `#f87171` (bright red) | `#dc2626` (dark red) |
+| Status Colors | Bright variants | Dark variants for contrast |
+
+#### 6. Architectural Improvements
+
+**Column Configuration Decoupling**: Separated column definitions into dedicated configuration file following monorepo best practices.
+
+**Structure** (`libs/trade-grid/src/lib/config/trade-grid-columns.config.ts`):
+```typescript
+export class TradeGridColumnsConfig {
+  static createColumnDefinitions(personService: PersonService, isDarkTheme = true): ColDef[] {
+    // Centralized column configuration with theme support
+  }
+  
+  static createDefaultColDef(isDarkTheme = true): ColDef {
+    // Theme-aware default column settings
+  }
+  
+  static createDefaultPersonService(): PersonService {
+    // Fallback person service with mock data
+  }
+}
+```
+
+**Benefits:**
+- **Separation of Concerns**: Component logic separated from configuration
+- **Reusability**: Configuration can be used across multiple components
+- **Maintainability**: Centralized column management
+- **Testability**: Easier to unit test configuration logic
+
+#### 7. Enterprise Row Grouping Features
+
+**Implementation**: Comprehensive row grouping with aggregation support.
+
+**Features:**
+- **Drag & Drop Grouping**: Users can drag columns to group panel
+- **Multiple Group Levels**: Support for nested grouping
+- **Aggregation Functions**: Sum, count, average for numeric columns
+- **Collapsed by Default**: Groups start collapsed for better overview
+- **Group Row Styling**: Special handling for group headers and values
+
+**Configuration:**
+```typescript
+gridOptions: GridOptions = {
+  rowGroupPanelShow: 'always',
+  groupDefaultExpanded: 0, // Collapsed by default
+  suppressAggFuncInHeader: false,
+  enableRowGroup: true,
+  // Column-specific grouping in column definitions
+}
+```
+
+#### 8. Enterprise Context Menu Integration
+
+**Migration**: Replaced custom context menu with AG Grid's enterprise context menu system.
+
+**Removed Custom Implementation:**
+- ❌ Custom HTML context menu template (30+ lines)
+- ❌ Custom CSS styling (50+ lines)
+- ❌ Custom event handling methods
+- ❌ Material menu module dependencies
+
+**New Enterprise Implementation:**
+```typescript
+getContextMenuItems() {
+  const selectedActiveTrades = this.getSelectedActiveTrades();
+  
+  return [
+    {
+      name: `Cancel Selected (${selectedActiveTrades.length})`,
+      disabled: selectedActiveTrades.length === 0,
+      action: () => this.onCancelSelected()
+    },
+    'separator',
+    'copy',
+    'copyWithHeaders', 
+    'export'
+  ];
+}
+```
+
+**Benefits:**
+- **Native Integration**: Uses AG Grid's built-in context menu system
+- **Professional Appearance**: Consistent with AG Grid's design language
+- **Better Accessibility**: Proper ARIA support and keyboard navigation
+- **Reduced Code**: Eliminated ~100 lines of custom implementation
+- **Enhanced Functionality**: Includes standard AG Grid operations (copy, export)
+
+#### 9. Enhanced User Experience Features
+
+**Multi-Selection with Smart Actions:**
+- **Bulk Operations**: Cancel multiple trades simultaneously
+- **Visual Feedback**: Real-time count of selected items
+- **Smart Disabling**: Actions disabled when no valid selections
+- **Keyboard Support**: Full keyboard navigation support
+
+**Professional UI Enhancements:**
+- **Loading States**: Proper loading indicators during operations
+- **Error Handling**: Graceful error handling with user feedback
+- **Tooltips**: Contextual help throughout the interface
+- **Animations**: Smooth transitions and micro-interactions
+
+#### 10. Performance & Optimization
+
+**Grid Performance:**
+- **Virtual Scrolling**: Efficient rendering of large datasets
+- **Animation Optimization**: Smooth row animations without performance impact
+- **Memory Management**: Proper cleanup of subscriptions and listeners
+- **Pagination**: Smart pagination with 50 rows per page default
+
+**Code Organization:**
+- **Tree Shaking**: Optimized imports for minimal bundle size
+- **Type Safety**: Comprehensive TypeScript interfaces
+- **Error Boundaries**: Robust error handling throughout
+
+### Development Guidelines for Enhanced Features
+
+#### Working with Enterprise Features
+
+1. **License Requirements**: Ensure AG Grid Enterprise license is properly configured
+2. **Module Registration**: Both Community and Enterprise modules must be registered
+3. **Environment Setup**: License key in environment variables for production
+
+#### Theme Development
+
+1. **Color Consistency**: Use theme service for all color decisions
+2. **Contrast Ratios**: Ensure WCAG compliance for accessibility
+3. **Dynamic Updates**: All components should respond to theme changes
+
+#### Column Configuration
+
+1. **Centralized Management**: Use `TradeGridColumnsConfig` for all column definitions
+2. **Theme Awareness**: Pass `isDarkTheme` parameter for proper styling
+3. **Type Safety**: Use `ColDef<TradeData>` for typed column definitions
+
+#### Context Menu Customization
+
+1. **Enterprise Integration**: Use AG Grid's context menu system
+2. **Business Logic**: Integrate existing business logic with menu actions
+3. **Accessibility**: Ensure keyboard and screen reader support
+
+### Testing Considerations
+
+**Unit Testing:**
+- Test theme switching functionality
+- Verify column configuration with different themes
+- Test context menu action execution
+
+**Integration Testing:**
+- Verify enterprise license integration
+- Test grouping and aggregation features
+- Validate theme consistency across components
+
+**E2E Testing:**
+- Test complete user workflows with enterprise features
+- Verify accessibility compliance
+- Test performance with large datasets
+
+### Future Enhancements
+
+**Potential Additions:**
+- Advanced filtering with filter sets
+- Custom aggregation functions
+- Excel-style pivoting
+- Real-time data streaming integration
+- Advanced charting with AG Grid Charts
+- Custom cell editors for inline editing
+
+This comprehensive enhancement has transformed the basic AG Grid implementation into a professional, enterprise-grade trading grid with modern UI patterns and robust functionality.
+
+### Application Renaming (October 2025)
+
+**Application Name Change**: The main application was renamed from "shell" to "eqt-activity" to better reflect its purpose as an EQT Activity trading platform.
+
+**Changes Made:**
+- **Application**: `apps/shell` → `apps/eqt-activity`
+- **E2E Tests**: `apps/shell-e2e` → `apps/eqt-activity-e2e`
+- **Title**: Updated HTML title to "EQT Activity Platform"
+- **Component**: Updated app title to "EQT Activity Platform"
+- **Documentation**: Updated all commands and references in documentation
+
+**Commands Updated:**
+```bash
+# Old commands
+npx nx serve shell
+npx nx build shell
+npx nx test shell
+
+# New commands  
+npx nx serve eqt-activity
+npx nx build eqt-activity
+npx nx test eqt-activity
+```
+
+**Note**: The feature library structure remains unchanged (`@trade-platform/shell/feature`) as it represents the shell pattern for organizing features, not the application name.
+
+````

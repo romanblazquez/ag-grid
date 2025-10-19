@@ -8,19 +8,26 @@
 
 // Define a custom palette
 $trade-platform-primary: mat.m2-define-palette(mat.$m2-indigo-palette);
-$trade-platform-accent: mat.m2-define-palette(mat.$m2-pink-palette, A200, A100, A400);
+$trade-platform-accent: mat.m2-define-palette(
+  mat.$m2-pink-palette,
+  A200,
+  A100,
+  A400
+);
 $trade-platform-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
 // Create the theme object
-$trade-platform-theme: mat.m2-define-light-theme((
-  color: (
-    primary: $trade-platform-primary,
-    accent: $trade-platform-accent,
-    warn: $trade-platform-warn,
-  ),
-  typography: mat.m2-define-typography-config(),
-  density: 0,
-));
+$trade-platform-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $trade-platform-primary,
+      accent: $trade-platform-accent,
+      warn: $trade-platform-warn,
+    ),
+    typography: mat.m2-define-typography-config(),
+    density: 0,
+  )
+);
 
 // Include theme styles for core and each component used in your app
 @include mat.all-component-themes($trade-platform-theme);

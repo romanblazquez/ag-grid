@@ -9,5 +9,5 @@ import { ShellFeature } from '@trade-platform/shell/feature';
   styleUrl: './app.scss',
 })
 export class App {
-  protected title = 'Trade Platform';
+  protected title = 'EQT Activity Platform';
 }

@@ -9,6 +9,4 @@ import { AllEnterpriseModule } from 'ag-grid-enterprise';
 // Register Enterprise modules first
 ModuleRegistry.registerModules([AllEnterpriseModule]);
 
-bootstrapApplication(App, appConfig).catch((err) =>
-  console.error(err)
-);
+bootstrapApplication(App, appConfig).catch((err) => console.error(err));
