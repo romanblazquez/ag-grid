@@ -4,121 +4,138 @@
   min-height: 400px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .grid-toolbar {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 0.5rem;
-  background: #f9fafb;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .bulk-cancel-btn {
-  padding: 8px 16px;
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-transform: none;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
 }
 
-.bulk-cancel-btn:hover:not(:disabled) {
-  background: #dc2626;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+.bulk-cancel-btn:hover:not([disabled]) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-.bulk-cancel-btn:active:not(:disabled) {
-  background: #b91c1c;
-  transform: translateY(1px);
+.bulk-cancel-btn mat-icon {
+  margin-right: 4px;
 }
 
-.bulk-cancel-btn:disabled {
-  background: #d1d5db;
-  cursor: not-allowed;
-  box-shadow: none;
+.selected-count {
+  margin-left: 8px;
 }
 
 .trade-grid {
   flex: 1;
   width: 100%;
   min-height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced AG Grid styling */
+:host ::ng-deep .ag-theme-quartz {
+  --ag-border-radius: 8px;
+  --ag-header-background-color: #f1f5f9;
+  --ag-odd-row-background-color: #fafafa;
+  --ag-row-hover-color: #f0f9ff;
+}
+
+:host ::ng-deep .ag-header {
+  font-weight: 600;
+  color: #374151;
+}
+
+:host ::ng-deep .ag-row-selected {
+  background-color: #dbeafe !important;
 }
 
 /* Individual cancel button styles */
 :host ::ng-deep .cancel-btn {
-  padding: 4px 12px;
-  background: #ef4444;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 :host ::ng-deep .cancel-btn:hover {
-  background: #dc2626;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
 }
 
-:host ::ng-deep .cancel-btn:active {
-  background: #b91c1c;
-}
-
-/* Custom Context Menu styles */
-.custom-context-menu {
+/* Material Context Menu Enhancement */
+.material-context-menu {
   position: fixed;
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 4px;
-  min-width: 200px;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  min-width: 220px;
   z-index: 1000;
-  font-size: 14px;
+  backdrop-filter: blur(10px);
 }
 
-.context-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  user-select: none;
+.material-context-menu .context-menu-item {
+  border-radius: 6px;
+  margin: 2px 0;
+  transition: all 0.2s ease-in-out;
 }
 
-.context-menu-item:hover:not(.disabled) {
+.material-context-menu .context-menu-item:hover:not([disabled]) {
   background: #f3f4f6;
+  transform: translateX(4px);
 }
 
-.context-menu-item:active:not(.disabled) {
-  background: #e5e7eb;
+.material-context-menu .context-menu-item mat-icon {
+  color: #6b7280;
+  margin-right: 12px;
 }
 
-.context-menu-item.disabled {
-  color: #9ca3af;
-  cursor: not-allowed;
+.material-context-menu .context-menu-item[disabled] mat-icon {
+  color: #d1d5db;
 }
 
-.context-menu-divider {
-  height: 1px;
-  background: #e5e7eb;
-  margin: 4px 0;
+/* Material Design enhancements */
+.mat-mdc-raised-button.bulk-cancel-btn {
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
 }
 
-.menu-icon {
-  font-size: 16px;
-  width: 16px;
-  display: inline-block;
-  text-align: center;
+/* Custom tooltip styling */
+:host ::ng-deep .mat-mdc-tooltip {
+  background-color: #1f2937;
+  color: white;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+/* Badge styling */
+:host ::ng-deep .mat-badge-content {
+  background: #6366f1;
+  color: white;
+  font-weight: 600;
 }

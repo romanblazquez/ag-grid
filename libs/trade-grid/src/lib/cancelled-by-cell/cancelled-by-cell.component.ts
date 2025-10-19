@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 
@@ -21,13 +22,14 @@ interface PersonService {
 @Component({
   selector: 'lib-cancelled-by-cell',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatTooltipModule],
   template: `
     <span 
       *ngIf="displayData; else naTemplate"
       class="cancelled-by-initials"
-      [title]="displayData.fullName"
-      [style]="initialsStyle"
+      [matTooltip]="displayData.fullName"
+      matTooltipPosition="above"
+      matTooltipClass="custom-tooltip"
     >
       {{ displayData.initials }}
     </span>
@@ -37,29 +39,37 @@ interface PersonService {
   `,
   styles: [`
     .cancelled-by-initials {
-      background: #e5e7eb;
-      color: #374151;
-      padding: 2px 6px;
-      border-radius: 4px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
       font-weight: 600;
+      font-size: 0.75rem;
       cursor: help;
       display: inline-block;
+      min-width: 24px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+      transition: all 0.2s ease-in-out;
+    }
+    
+    .cancelled-by-initials:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+    }
+    
+    :host ::ng-deep .custom-tooltip {
+      background-color: #1f2937;
+      color: white;
+      font-size: 0.875rem;
+      border-radius: 6px;
+      padding: 8px 12px;
     }
   `]
 })
 export class CancelledByCellComponent implements ICellRendererAngularComp, OnInit {
   params!: CancelledByCellParams;
   displayData: { initials: string; fullName: string } | null = null;
-  
-  initialsStyle = {
-    background: '#e5e7eb',
-    color: '#374151',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontWeight: '600',
-    cursor: 'help',
-    display: 'inline-block'
-  };
 
   agInit(params: CancelledByCellParams): void {
     this.params = params;

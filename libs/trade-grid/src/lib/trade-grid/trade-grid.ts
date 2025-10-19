@@ -10,6 +10,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgGridAngular } from 'ag-grid-angular';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import {
   ColDef,
   GridApi,
@@ -49,7 +55,7 @@ export interface PersonService {
 
 @Component({
   selector: 'lib-trade-grid',
-  imports: [CommonModule, AgGridAngular, CancelledByCellComponent],
+  imports: [CommonModule, AgGridAngular, CancelledByCellComponent, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule, MatMenuModule, MatDividerModule],
   templateUrl: './trade-grid.html',
   styleUrl: './trade-grid.css',
 })

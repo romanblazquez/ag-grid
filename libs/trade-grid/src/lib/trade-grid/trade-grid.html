@@ -1,11 +1,24 @@
 <div class="trade-grid-container" (click)="hideContextMenu()" tabindex="0" (keydown.enter)="hideContextMenu()" (keydown.space)="hideContextMenu()">
   <div class="grid-toolbar">
     <button
+      mat-raised-button
+      color="warn"
       class="bulk-cancel-btn"
       (click)="onCancelSelected()"
       [disabled]="selectedActiveCount === 0"
+      matTooltip="Cancel all selected active trades"
+      matTooltipPosition="above"
     >
-      Cancel Selected ({{ selectedActiveCount }})
+      <mat-icon>cancel</mat-icon>
+      Cancel Selected
+      <span 
+        *ngIf="selectedActiveCount > 0" 
+        class="selected-count"
+        matBadge="{{ selectedActiveCount }}"
+        matBadgePosition="after"
+        matBadgeColor="accent"
+        matBadgeSize="small"
+      ></span>
     </button>
   </div>
 
@@ -24,31 +37,34 @@
     (contextmenu)="onContextMenu($event)"
   ></ag-grid-angular>
 
-  <!-- Custom Context Menu -->
+  <!-- Custom Context Menu with Material Design -->
   <div
     *ngIf="showContextMenu"
-    class="custom-context-menu"
+    class="custom-context-menu material-context-menu"
     role="menu"
     tabindex="0"
     [style.left.px]="contextMenuX"
     [style.top.px]="contextMenuY"
   >
     <button
+      mat-menu-item
       type="button"
       class="context-menu-item"
       [class.disabled]="selectedActiveCount === 0"
       [disabled]="selectedActiveCount === 0"
       (click)="onContextMenuCancelSelected(); hideContextMenu()"
+      matTooltip="Cancel all selected trades"
     >
-      <span class="menu-icon">✖</span>
+      <mat-icon>cancel</mat-icon>
       <span>Cancel Selected ({{ selectedActiveCount }})</span>
     </button>
-    <button type="button" class="context-menu-item" (click)="hideContextMenu()">
-      <span class="menu-icon">📋</span>
+    <mat-divider></mat-divider>
+    <button mat-menu-item type="button" class="context-menu-item" (click)="hideContextMenu()">
+      <mat-icon>content_copy</mat-icon>
       <span>Copy</span>
     </button>
-    <button type="button" class="context-menu-item" (click)="hideContextMenu()">
-      <span class="menu-icon">📊</span>
+    <button mat-menu-item type="button" class="context-menu-item" (click)="hideContextMenu()">
+      <mat-icon>file_download</mat-icon>
       <span>Export</span>
     </button>
   </div>
