@@ -134,8 +134,7 @@ export class TradeGrid implements OnInit, OnChanges {
           iconKey: 'filter',
           toolPanel: 'agFiltersToolPanel',
         }
-      ],
-      defaultToolPanel: 'columns'
+      ]
     }
   };
 
