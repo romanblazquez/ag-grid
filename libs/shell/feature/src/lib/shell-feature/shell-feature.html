@@ -1,7 +1,17 @@
 <div class="shell-feature-container">
   <header class="feature-header">
-    <h1>Trade Platform</h1>
-    <p class="subtitle">Real-time trading dashboard with live updates</p>
+    <div class="header-content">
+      <div class="title-section">
+        <h1>Trade Platform</h1>
+        <p class="subtitle">Real-time trading dashboard with live updates</p>
+      </div>
+      <div class="controls-section">
+        <lib-theme-switcher 
+          [selectedTheme]="currentTheme"
+          (themeChanged)="onThemeChanged($event)"
+        ></lib-theme-switcher>
+      </div>
+    </div>
   </header>
 
   <section class="stats-section">
@@ -30,6 +40,7 @@
     <lib-trade-grid
       [rowData]="tradeData"
       [personService]="personService"
+      [themeName]="currentTheme"
       (cancelTrade)="onCancelTrade($event)"
       (cancelSelectedTrades)="onCancelSelectedTrades($event)"
     ></lib-trade-grid>

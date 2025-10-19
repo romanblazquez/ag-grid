@@ -1,13 +1,13 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
-import { TradeGrid, TradeData, PersonService, Person } from '@trade-platform/trade-grid';
+import { TradeGrid, TradeData, PersonService } from '@trade-platform/trade-grid';
 import { TradeDataService } from '@trade-platform/shared/data-access';
-import { StatsCard } from '@trade-platform/shared/ui-components';
+import { StatsCard, ThemeSwitcher } from '@trade-platform/shared/ui-components';
 
 @Component({
   selector: 'lib-shell-feature',
-  imports: [CommonModule, TradeGrid, StatsCard],
+  imports: [CommonModule, TradeGrid, StatsCard, ThemeSwitcher],
   templateUrl: './shell-feature.html',
   styleUrl: './shell-feature.css',
 })
@@ -16,6 +16,7 @@ export class ShellFeature implements OnInit, OnDestroy {
   totalTrades = 0;
   buyCount = 0;
   sellCount = 0;
+  currentTheme = 'dark';
 
   private destroy$ = new Subject<void>();
   private tradeDataService = inject(TradeDataService);
@@ -67,6 +68,11 @@ export class ShellFeature implements OnInit, OnDestroy {
       const currentUser = 'user2'; // Simulating current logged-in user
       this.tradeDataService.cancelMultipleTrades(tradeIds, currentUser);
     }
+  }
+
+  onThemeChanged(themeName: string): void {
+    this.currentTheme = themeName;
+    console.log(`Theme changed to: ${themeName}`);
   }
 
   private updateStats(trades: TradeData[]): void {

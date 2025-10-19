@@ -100,7 +100,7 @@ export class TradeDataService {
     return this.trades$.pipe(map((trades) => trades.length));
   }
 
-  cancelTrade(tradeId: string, cancelledBy: string = 'user1'): void {
+  cancelTrade(tradeId: string, cancelledBy = 'user1'): void {
     const currentTrades = this.tradesSubject.value;
     const updatedTrades = currentTrades.map((trade) =>
       trade.id === tradeId && trade.status === 'ACTIVE'
@@ -110,7 +110,7 @@ export class TradeDataService {
     this.tradesSubject.next(updatedTrades);
   }
 
-  cancelMultipleTrades(tradeIds: string[], cancelledBy: string = 'user1'): void {
+  cancelMultipleTrades(tradeIds: string[], cancelledBy = 'user1'): void {
     const currentTrades = this.tradesSubject.value;
     const tradeIdSet = new Set(tradeIds);
     const updatedTrades = currentTrades.map((trade) =>

@@ -8,6 +8,23 @@
 }
 
 .feature-header {
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+
+  .title-section {
+    flex: 1;
+  }
+
+  .controls-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
   h1 {
     margin: 0 0 0.5rem 0;
     color: #1a1a1a;

@@ -50,21 +50,120 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Enhanced AG Grid styling */
+/* Enhanced AG Grid styling with better header readability */
 :host ::ng-deep .ag-theme-quartz {
   --ag-border-radius: 8px;
-  --ag-header-background-color: #f1f5f9;
-  --ag-odd-row-background-color: #fafafa;
-  --ag-row-hover-color: #f0f9ff;
+  --ag-header-background-color: #2d3748;
+  --ag-header-foreground-color: #ffffff;
+  --ag-odd-row-background-color: #1a202c;
+  --ag-row-hover-color: #2d3748;
+  --ag-selected-row-background-color: #4a5568;
+  
+  /* Header text improvements */
+  --ag-header-column-separator-color: #4a5568;
+  --ag-border-color: #4a5568;
 }
 
 :host ::ng-deep .ag-header {
   font-weight: 600;
-  color: #374151;
+  color: #ffffff !important;
+  background-color: #2d3748 !important;
+  border-bottom: 2px solid #4a5568;
+  min-height: 44px;
 }
 
+:host ::ng-deep .ag-header-cell {
+  color: #ffffff !important;
+  background-color: #2d3748 !important;
+  border-right: 1px solid #4a5568;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+:host ::ng-deep .ag-header-cell-text {
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
+  letter-spacing: 0.025em;
+}
+
+:host ::ng-deep .ag-header-cell:hover {
+  background-color: #374151 !important;
+  transition: background-color 0.2s ease;
+}
+
+:host ::ng-deep .ag-header-cell:focus,
+:host ::ng-deep .ag-header-cell:focus-within {
+  outline: 2px solid #6366f1;
+  outline-offset: -2px;
+}
+
+:host ::ng-deep .ag-header-cell-resize::after {
+  background-color: #6366f1;
+  width: 2px;
+}
+
+/* Sort indicators with better visibility */
+:host ::ng-deep .ag-header-cell-sorted-asc .ag-header-cell-text::after {
+  content: ' ↑';
+  color: #10b981 !important;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+:host ::ng-deep .ag-header-cell-sorted-desc .ag-header-cell-text::after {
+  content: ' ↓';
+  color: #10b981 !important;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+/* Filter indicators */
+:host ::ng-deep .ag-header-cell-filtered .ag-header-cell-text {
+  color: #fbbf24 !important;
+}
+
+:host ::ng-deep .ag-header-cell-filtered .ag-header-cell-text::before {
+  content: '🔍 ';
+  margin-right: 4px;
+}
+
+/* Row styling for consistency */
 :host ::ng-deep .ag-row-selected {
-  background-color: #dbeafe !important;
+  background-color: #4a5568 !important;
+  color: #ffffff !important;
+}
+
+:host ::ng-deep .ag-cell {
+  color: #ffffff;
+  border-right: 1px solid #374151;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Menu button styling in headers */
+:host ::ng-deep .ag-header-cell-menu-button {
+  color: #ffffff;
+  opacity: 0.7;
+}
+
+:host ::ng-deep .ag-header-cell-menu-button:hover {
+  opacity: 1;
+  background-color: #374151;
+}
+
+/* Column resizing indicator */
+:host ::ng-deep .ag-header-cell-resize {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+:host ::ng-deep .ag-header-cell:hover .ag-header-cell-resize {
+  opacity: 1;
 }
 
 /* Individual cancel button styles */

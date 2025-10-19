@@ -22,10 +22,10 @@ import {
   GridReadyEvent,
   ModuleRegistry,
   AllCommunityModule,
-  themeQuartz,
   ICellRendererParams,
 } from 'ag-grid-community';
 import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
+import { ThemeService, DEFAULT_THEME } from '@trade-platform/shared/ui-components';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -62,11 +62,12 @@ export interface PersonService {
 export class TradeGrid implements OnInit, OnChanges {
   @Input() rowData: TradeData[] = [];
   @Input() personService?: PersonService;
+  @Input() themeName?: string = 'dark'; // Allow theme selection via input
   @Output() cancelTrade = new EventEmitter<string>();
   @Output() cancelSelectedTrades = new EventEmitter<string[]>();
 
-  // Use the new Theming API (v33+)
-  theme = themeQuartz;
+  // Use the custom dark theme from shared components
+  theme = DEFAULT_THEME;
   selectedActiveCount = 0;
   showContextMenu = false;
   contextMenuX = 0;
@@ -195,12 +196,23 @@ export class TradeGrid implements OnInit, OnChanges {
   ngOnInit(): void {
     // Component initialized
     console.log('TradeGrid initialized');
+    this.updateTheme();
   }
 
   ngOnChanges(): void {
     // Handle data changes if needed in the future
     console.log('TradeGrid data changed');
+    this.updateTheme();
     this.cdr.detectChanges();
+  }
+
+  private updateTheme(): void {
+    if (this.themeName) {
+      const themeConfig = ThemeService.getThemeByName(this.themeName);
+      if (themeConfig) {
+        this.theme = themeConfig.theme;
+      }
+    }
   }
 
   private getPersonService(): PersonService {
