@@ -89,7 +89,7 @@ export class TradeGridColumnsConfig {
         headerName: 'Side',
         width: 80,
         sortable: true,
-        filter: 'agSetColumnFilter',
+        filter: 'agSetColumnFilter', // Restored set filter for client-side row model
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: (params) => {
@@ -149,7 +149,7 @@ export class TradeGridColumnsConfig {
         headerName: 'Status',
         width: 100,
         sortable: true,
-        filter: 'agSetColumnFilter',
+        filter: 'agSetColumnFilter', // Restored set filter for client-side row model
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: (params) => {

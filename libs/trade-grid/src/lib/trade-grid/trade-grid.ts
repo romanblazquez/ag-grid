@@ -53,6 +53,7 @@ export class TradeGrid implements OnInit, OnChanges {
   theme = DEFAULT_THEME;
   selectedActiveCount = 0;
   private gridApi: GridApi | null = null;
+  private allData: TradeData[] = []; // Store all data for infinite scroll
 
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -62,17 +63,38 @@ export class TradeGrid implements OnInit, OnChanges {
   // Default column definition from configuration  
   defaultColDef: ColDef = TradeGridColumnsConfig.createDefaultColDef(true);
 
+  // Module registration for AG Grid
+  modules = [AllEnterpriseModule];
+
   gridOptions: GridOptions = {
+    // Client-side row model - loads all data at once
+    rowModelType: 'clientSide',
+    
+    // Row grouping configuration - fully restored
     rowGroupPanelShow: 'always',
+    groupDefaultExpanded: 1, // Auto-expand first level of groups
+    
+    // Enhanced grouping features
+    groupSelectsChildren: true, // Selecting group selects all children
+    groupSelectsFiltered: true, // Only select filtered children
+    
+    // Row selection configuration with header checkbox
     rowSelection: {
       mode: 'multiRow',
       enableClickSelection: true,
-      groupSelects: 'descendants'
+      headerCheckbox: true, // Re-enabled for client-side row model
+      groupSelects: 'descendants', // Restored group selection behavior
+      isRowSelectable: (rowNode: { data?: TradeData }) => {
+        return rowNode.data?.status === 'ACTIVE';
+      },
     },
     cellSelection: true,
     suppressAggFuncInHeader: false,
-    groupDefaultExpanded: 1,
+    
+    // Animation and UI
     animateRows: true,
+    
+    // Side bar configuration with full grouping support
     sideBar: {
       toolPanels: [
         {
@@ -90,14 +112,6 @@ export class TradeGrid implements OnInit, OnChanges {
           toolPanel: 'agFiltersToolPanel',
         }
       ]
-    }
-  };
-
-  rowSelectionOptions = {
-    mode: 'multiRow' as const,
-    checkboxes: true,
-    isRowSelectable: (rowNode: { data?: TradeData }) => {
-      return rowNode.data?.status === 'ACTIVE';
     },
   };
 
@@ -107,6 +121,9 @@ export class TradeGrid implements OnInit, OnChanges {
     this.updateTheme();
     this.initializeColumnDefs();
     this.setupEnterpriseLicense();
+    
+    // Initialize data for infinite scroll
+    this.allData = [...this.rowData];
   }
 
   private async setupEnterpriseLicense(): Promise<void> {
@@ -121,9 +138,14 @@ export class TradeGrid implements OnInit, OnChanges {
   }
 
   ngOnChanges(): void {
-    // Handle data changes if needed in the future
+    // Handle data changes for client-side row model
     console.log('TradeGrid data changed');
     this.updateTheme();
+    
+    // Update the internal data store
+    this.allData = [...this.rowData];
+    
+    // No need to refresh cache - client-side model will update automatically
     this.cdr.detectChanges();
   }
 

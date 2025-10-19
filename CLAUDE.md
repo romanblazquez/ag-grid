@@ -642,4 +642,39 @@ npx nx test eqt-activity
 
 **Note**: The feature library structure remains unchanged (`@trade-platform/shell/feature`) as it represents the shell pattern for organizing features, not the application name.
 
+### Infinite Scroll Implementation (October 2025)
+
+**Performance Enhancement**: Replaced pagination with infinite scroll for better user experience and performance with large datasets.
+
+**Changes Made:**
+- **Row Model**: Changed from client-side to infinite scroll row model
+- **Datasource**: Implemented custom IDatasource for server-side data simulation
+- **Caching**: Added intelligent caching with configurable block sizes
+- **Sorting**: Maintained sorting functionality with infinite scroll
+- **Performance**: Optimized for large datasets with virtual scrolling
+
+**Configuration:**
+```typescript
+// Infinite scroll settings
+[rowModelType]="'infinite'"
+[cacheBlockSize]="50"           // Rows per block
+[cacheOverflowSize]="2"         // Extra blocks cached
+[maxConcurrentDatasourceRequests]="2"
+[infiniteInitialRowCount]="100" // Initial loading indicator
+[maxBlocksInCache]="10"         // Memory management
+```
+
+**Benefits:**
+- **Better Performance**: Only renders visible rows
+- **Smooth Scrolling**: No page breaks or loading delays
+- **Memory Efficient**: Intelligent caching and cleanup
+- **Large Dataset Support**: Handles thousands of rows smoothly
+- **Maintained Functionality**: All existing features (grouping, sorting, filtering) work seamlessly
+
+**Technical Implementation:**
+- Custom datasource with simulated server-side data fetching
+- Intelligent sorting implementation for all TradeData fields
+- Automatic data refresh on changes with `refreshInfiniteCache()`
+- Optimized rendering with 100ms simulated network delay
+
 ````
