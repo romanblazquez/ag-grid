@@ -1,6 +1,16 @@
 <div class="trade-grid-container">
+  <div class="grid-toolbar">
+    <button
+      class="bulk-cancel-btn"
+      (click)="onCancelSelected()"
+      [disabled]="selectedActiveCount === 0"
+    >
+      Cancel Selected ({{ selectedActiveCount }})
+    </button>
+  </div>
+
   <ag-grid-angular
-    style="width: 100%; height: 100%;"
+    class="trade-grid"
     [theme]="theme"
     [rowData]="rowData"
     [columnDefs]="columnDefs"
@@ -9,7 +19,7 @@
     [paginationPageSize]="50"
     [rowSelection]="rowSelectionOptions"
     [animateRows]="true"
-    [getContextMenuItems]="getContextMenuItems"
     (gridReady)="onGridReady($event)"
+    (selectionChanged)="onSelectionChanged()"
   />
 </div>

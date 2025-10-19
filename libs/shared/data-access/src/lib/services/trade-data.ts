@@ -15,7 +15,8 @@ export class TradeDataService {
 
   constructor() {
     this.initializeData();
-    this.simulateRealTimeUpdates();
+    // Disabled automatic updates - uncomment to enable real-time simulation
+    // this.simulateRealTimeUpdates();
   }
 
   private initializeData(): void {

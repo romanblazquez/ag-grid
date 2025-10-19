@@ -4,15 +4,55 @@
   min-height: 400px;
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
 }
 
-.trade-grid-container ag-grid-angular {
+.grid-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.bulk-cancel-btn {
+  padding: 8px 16px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bulk-cancel-btn:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.bulk-cancel-btn:active:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(1px);
+}
+
+.bulk-cancel-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.trade-grid {
+  flex: 1;
   width: 100%;
-  height: 100%;
   min-height: 400px;
 }
 
-/* Cancel button styles */
+/* Individual cancel button styles */
 :host ::ng-deep .cancel-btn {
   padding: 4px 12px;
   background: #ef4444;

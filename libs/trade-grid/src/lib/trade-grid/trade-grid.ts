@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   ColDef,
@@ -37,7 +37,10 @@ export class TradeGrid implements OnInit, OnChanges {
   // Use the new Theming API (v33+)
   theme = themeQuartz;
 
+  selectedActiveCount = 0;
   private gridApi: any;
+
+  constructor(private cdr: ChangeDetectorRef) {}
 
   columnDefs: ColDef<TradeData>[] = [
     { field: 'symbol', headerName: 'Symbol', sortable: true, filter: true, width: 100 },
@@ -129,28 +132,28 @@ export class TradeGrid implements OnInit, OnChanges {
     }, 100);
   }
 
-  getContextMenuItems = (params: any) => {
+  onSelectionChanged(): void {
+    this.updateSelectedCount();
+  }
+
+  onCancelSelected(): void {
     const selectedNodes = this.gridApi?.getSelectedNodes() || [];
     const selectedActiveTrades = selectedNodes.filter(
       (node: any) => node.data?.status === 'ACTIVE'
     );
 
-    const result: any[] = [
-      {
-        name: `Cancel Selected Trades (${selectedActiveTrades.length})`,
-        disabled: selectedActiveTrades.length === 0,
-        action: () => {
-          const tradeIds = selectedActiveTrades.map((node: any) => node.data.id);
-          this.cancelSelectedTrades.emit(tradeIds);
-        },
-        icon: '<span style="color: #ef4444;">✖</span>',
-      },
-      'separator',
-      'copy',
-      'copyWithHeaders',
-      'export',
-    ];
+    if (selectedActiveTrades.length > 0) {
+      const tradeIds = selectedActiveTrades.map((node: any) => node.data.id);
+      this.cancelSelectedTrades.emit(tradeIds);
+    }
+  }
 
-    return result;
-  };
+  private updateSelectedCount(): void {
+    if (!this.gridApi) {
+      this.selectedActiveCount = 0;
+      return;
+    }
+    const selectedNodes = this.gridApi.getSelectedNodes() || [];
+    this.selectedActiveCount = selectedNodes.filter((node: any) => node.data?.status === 'ACTIVE').length;
+  }
 }
