@@ -30,32 +30,14 @@ import { AllEnterpriseModule } from 'ag-grid-enterprise';
 
 import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
 import { ThemeService, DEFAULT_THEME, setupAgGridLicense } from '@trade-platform/shared/ui-components';
+import { 
+  TradeGridColumnsConfig, 
+  PersonService, 
+  TradeData 
+} from '../config';
 
 // Register AG Grid modules including Enterprise
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule]);
-
-export interface TradeData {
-  id: string;
-  symbol: string;
-  price: number;
-  quantity: number;
-  side: 'BUY' | 'SELL';
-  timestamp: Date;
-  trader: string;
-  status: 'ACTIVE' | 'CANCELLED';
-  cancelledBy?: string; // Person ID who cancelled the trade
-}
-
-export interface Person {
-  id: string;
-  fullName: string;
-  initials: string;
-}
-
-export interface PersonService {
-  getPersonById(id: string): Person | undefined;
-  getAllPersons(): Person[];
-}
 
 @Component({
   selector: 'lib-trade-grid',
@@ -80,32 +62,11 @@ export class TradeGrid implements OnInit, OnChanges {
 
   private readonly cdr = inject(ChangeDetectorRef);
 
-  // Default person service with mock data
-  private defaultPersonService: PersonService = {
-    getPersonById: (id: string) => {
-      const persons = this.defaultPersonService.getAllPersons();
-      return persons.find(p => p.id === id);
-    },
-    getAllPersons: () => [
-      { id: 'user1', fullName: 'John Smith', initials: 'JS' },
-      { id: 'user2', fullName: 'Jane Doe', initials: 'JD' },
-      { id: 'user3', fullName: 'Michael Johnson', initials: 'MJ' },
-      { id: 'user4', fullName: 'Sarah Wilson', initials: 'SW' },
-      { id: 'user5', fullName: 'David Brown', initials: 'DB' },
-    ]
-  };
-
-    // Grid configuration with enterprise features
-  defaultColDef: ColDef = {
-    flex: 1,
-    minWidth: 100,
-    resizable: true,
-    sortable: true,
-    filter: true,
-    enableRowGroup: false,
-    enablePivot: false,
-    enableValue: false,
-  };
+  // Column definitions from configuration
+  columnDefs: ColDef[] = [];
+  
+  // Default column definition from configuration  
+  defaultColDef: ColDef = TradeGridColumnsConfig.createDefaultColDef();
 
   gridOptions: GridOptions = {
     rowGroupPanelShow: 'always',
@@ -138,136 +99,6 @@ export class TradeGrid implements OnInit, OnChanges {
     }
   };
 
-  columnDefs: ColDef[] = [
-    { 
-      field: 'timestamp', 
-      headerName: 'Time',
-      width: 120,
-      sortable: true,
-      filter: 'agDateColumnFilter',
-      valueFormatter: (params) => {
-        return new Date(params.value).toLocaleTimeString();
-      }
-    },
-    { 
-      field: 'symbol', 
-      headerName: 'Symbol',
-      width: 100,
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      enableRowGroup: true,
-      rowGroup: false
-    },
-    { 
-      field: 'side', 
-      headerName: 'Side',
-      width: 80,
-      sortable: true,
-      filter: 'agSetColumnFilter',
-      enableRowGroup: true,
-      rowGroup: false,
-      cellStyle: (params) => {
-        const style: Record<string, string> = params.value === 'BUY' 
-          ? { color: '#4caf50', fontWeight: 'bold' }
-          : { color: '#f44336', fontWeight: 'bold' };
-        return style;
-      }
-    },
-    { 
-      field: 'quantity', 
-      headerName: 'Quantity',
-      width: 120,
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      enableValue: true,
-      aggFunc: 'sum',
-      valueFormatter: (params) => {
-        const value = params.value;
-        if (typeof value === 'number' && !isNaN(value)) {
-          return value.toLocaleString();
-        }
-        return '0';
-      }
-    },
-    { 
-      field: 'price', 
-      headerName: 'Price',
-      width: 120,
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      enableValue: true,
-      aggFunc: 'avg',
-      valueFormatter: (params) => {
-        const value = params.value;
-        if (typeof value === 'number' && !isNaN(value)) {
-          return `$${value.toFixed(2)}`;
-        }
-        return '$0.00';
-      }
-    },
-    { 
-      field: 'trader', 
-      headerName: 'Trader',
-      width: 120,
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      enableRowGroup: true,
-      rowGroup: false
-    },
-    { 
-      field: 'status', 
-      headerName: 'Status',
-      width: 100,
-      sortable: true,
-      filter: 'agSetColumnFilter',
-      enableRowGroup: true,
-      rowGroup: false,
-      cellStyle: (params) => {
-        const status = params.value?.toLowerCase();
-        const style: Record<string, string> = { fontWeight: 'bold' };
-        switch (status) {
-          case 'filled':
-            style['color'] = '#4caf50';
-            break;
-          case 'cancelled':
-            style['color'] = '#f44336';
-            break;
-          case 'pending':
-            style['color'] = '#ff9800';
-            break;
-          default:
-            style['color'] = '#9e9e9e';
-            break;
-        }
-        return style;
-      }
-    },
-    {
-      field: 'cancelledBy',
-      headerName: 'Cancelled By',
-      width: 120,
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      cellRenderer: CancelledByCellComponent,
-      enableRowGroup: true,
-      rowGroup: false,
-      valueGetter: (params) => {
-        const trade = params.data;
-        if (!trade || trade.status !== 'CANCELLED' || !trade.cancelledBy) {
-          return null;
-        }
-        
-        const personService = this.getPersonService();
-        const person = personService.getPersonById(trade.cancelledBy);
-        
-        return person ? person.fullName : `Unknown (${trade.cancelledBy})`;
-      },
-      cellRendererParams: {
-        getPersonService: () => this.getPersonService()
-      }
-    }
-  ];
-
   rowSelectionOptions = {
     mode: 'multiRow' as const,
     checkboxes: true,
@@ -295,24 +126,17 @@ export class TradeGrid implements OnInit, OnChanges {
     }
   }
 
-  private initializeColumnDefs(): void {
-    // Update the cancelled by column with proper service binding
-    const cancelledByColIndex = this.columnDefs.findIndex(col => col.field === 'cancelledBy');
-    if (cancelledByColIndex >= 0) {
-      this.columnDefs[cancelledByColIndex] = {
-        ...this.columnDefs[cancelledByColIndex],
-        cellRendererParams: {
-          getPersonService: () => this.getPersonService()
-        }
-      };
-    }
-  }
-
   ngOnChanges(): void {
     // Handle data changes if needed in the future
     console.log('TradeGrid data changed');
     this.updateTheme();
     this.cdr.detectChanges();
+  }
+
+  private initializeColumnDefs(): void {
+    // Initialize column definitions using the configuration
+    const personService = this.getPersonService();
+    this.columnDefs = TradeGridColumnsConfig.createColumnDefinitions(personService);
   }
 
   private updateTheme(): void {
@@ -325,7 +149,7 @@ export class TradeGrid implements OnInit, OnChanges {
   }
 
   private getPersonService(): PersonService {
-    return this.personService || this.defaultPersonService;
+    return this.personService || TradeGridColumnsConfig.createDefaultPersonService();
   }
 
   getCancelledByDisplay(cancelledBy: string | undefined): { initials: string; fullName: string } | null {

@@ -1,0 +1,213 @@
+import { ColDef } from 'ag-grid-community';
+import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
+
+/**
+ * Person service interface for getting person details
+ */
+export interface PersonService {
+  getPersonById(id: string): Person | undefined;
+  getAllPersons(): Person[];
+}
+
+/**
+ * Person model interface
+ */
+export interface Person {
+  id: string;
+  fullName: string;
+  initials: string;
+}
+
+/**
+ * Trade data model interface
+ */
+export interface TradeData {
+  id: string;
+  symbol: string;
+  price: number;
+  quantity: number;
+  side: 'BUY' | 'SELL';
+  timestamp: Date;
+  trader: string;
+  status: 'ACTIVE' | 'CANCELLED' | 'FILLED' | 'PENDING';
+  cancelledBy?: string;
+}
+
+/**
+ * Configuration class for trade grid column definitions
+ * Follows the monorepo pattern of separating configuration from components
+ */
+export class TradeGridColumnsConfig {
+  
+  /**
+   * Creates column definitions for the trade grid
+   * @param personService - Service to get person details for cancelled by column
+   * @returns Array of column definitions
+   */
+  static createColumnDefinitions(personService: PersonService): ColDef[] {
+    return [
+      {
+        field: 'timestamp',
+        headerName: 'Time',
+        width: 120,
+        sortable: true,
+        filter: 'agDateColumnFilter',
+        valueFormatter: (params) => {
+          return new Date(params.value).toLocaleTimeString();
+        }
+      },
+      {
+        field: 'symbol',
+        headerName: 'Symbol',
+        width: 100,
+        sortable: true,
+        filter: 'agTextColumnFilter',
+        enableRowGroup: true,
+        rowGroup: false
+      },
+      {
+        field: 'side',
+        headerName: 'Side',
+        width: 80,
+        sortable: true,
+        filter: 'agSetColumnFilter',
+        enableRowGroup: true,
+        rowGroup: false,
+        cellStyle: (params) => {
+          const style: Record<string, string> = params.value === 'BUY'
+            ? { color: '#4caf50', fontWeight: 'bold' }
+            : { color: '#f44336', fontWeight: 'bold' };
+          return style;
+        }
+      },
+      {
+        field: 'quantity',
+        headerName: 'Quantity',
+        width: 120,
+        sortable: true,
+        filter: 'agNumberColumnFilter',
+        enableValue: true,
+        aggFunc: 'sum',
+        valueFormatter: (params) => {
+          const value = params.value;
+          if (typeof value === 'number' && !isNaN(value)) {
+            return value.toLocaleString();
+          }
+          return '0';
+        }
+      },
+      {
+        field: 'price',
+        headerName: 'Price',
+        width: 120,
+        sortable: true,
+        filter: 'agNumberColumnFilter',
+        enableValue: true,
+        aggFunc: 'avg',
+        valueFormatter: (params) => {
+          const value = params.value;
+          if (typeof value === 'number' && !isNaN(value)) {
+            return `$${value.toFixed(2)}`;
+          }
+          return '$0.00';
+        }
+      },
+      {
+        field: 'trader',
+        headerName: 'Trader',
+        width: 120,
+        sortable: true,
+        filter: 'agTextColumnFilter',
+        enableRowGroup: true,
+        rowGroup: false
+      },
+      {
+        field: 'status',
+        headerName: 'Status',
+        width: 100,
+        sortable: true,
+        filter: 'agSetColumnFilter',
+        enableRowGroup: true,
+        rowGroup: false,
+        cellStyle: (params) => {
+          const status = params.value?.toLowerCase();
+          const style: Record<string, string> = { fontWeight: 'bold' };
+          switch (status) {
+            case 'filled':
+              style['color'] = '#4caf50';
+              break;
+            case 'cancelled':
+              style['color'] = '#f44336';
+              break;
+            case 'pending':
+              style['color'] = '#ff9800';
+              break;
+            default:
+              style['color'] = '#9e9e9e';
+              break;
+          }
+          return style;
+        }
+      },
+      {
+        field: 'cancelledBy',
+        headerName: 'Cancelled By',
+        width: 120,
+        sortable: true,
+        filter: 'agTextColumnFilter',
+        cellRenderer: CancelledByCellComponent,
+        enableRowGroup: true,
+        rowGroup: false,
+        valueGetter: (params) => {
+          const trade = params.data;
+          if (!trade || trade.status !== 'CANCELLED' || !trade.cancelledBy) {
+            return null;
+          }
+
+          const person = personService.getPersonById(trade.cancelledBy);
+          return person ? person.fullName : `Unknown (${trade.cancelledBy})`;
+        },
+        cellRendererParams: {
+          getPersonService: () => personService
+        }
+      }
+    ];
+  }
+
+  /**
+   * Creates default column definition for the trade grid
+   * @returns Default column definition object
+   */
+  static createDefaultColDef(): ColDef {
+    return {
+      flex: 1,
+      minWidth: 100,
+      resizable: true,
+      sortable: true,
+      filter: true,
+      enableRowGroup: false,
+      enablePivot: false,
+      enableValue: false,
+    };
+  }
+
+  /**
+   * Creates a default person service with mock data
+   * Used as fallback when no person service is provided
+   * @returns PersonService with mock data
+   */
+  static createDefaultPersonService(): PersonService {
+    const persons: Person[] = [
+      { id: 'user1', fullName: 'John Smith', initials: 'JS' },
+      { id: 'user2', fullName: 'Jane Doe', initials: 'JD' },
+      { id: 'user3', fullName: 'Michael Johnson', initials: 'MJ' },
+      { id: 'user4', fullName: 'Sarah Wilson', initials: 'SW' },
+      { id: 'user5', fullName: 'David Brown', initials: 'DB' },
+    ];
+
+    return {
+      getPersonById: (id: string) => persons.find(p => p.id === id),
+      getAllPersons: () => persons
+    };
+  }
+}
