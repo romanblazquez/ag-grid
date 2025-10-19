@@ -89,12 +89,46 @@ export class CancelledByCellComponent implements ICellRendererAngularComp, OnIni
   private updateDisplayData(): void {
     const trade = this.params.data;
     
+    // Check if this is a group row
+    if (this.params.node && this.params.node.group) {
+      // For group rows, display the group key which should be the person's name
+      const groupKey = this.params.value;
+      if (groupKey) {
+        // Extract initials from the full name (e.g., "John Smith" -> "JS")
+        const nameParts = groupKey.split(' ');
+        const initials = nameParts.map((part: string) => part.charAt(0)).join('');
+        this.displayData = {
+          initials: initials,
+          fullName: groupKey
+        };
+      } else {
+        this.displayData = null;
+      }
+      return;
+    }
+    
+    // Handle regular data rows
     if (!trade || trade.status !== 'CANCELLED' || !trade.cancelledBy) {
       this.displayData = null;
       return;
     }
 
-    const personService = this.params.getPersonService();
+    // Try to get the person service, with fallback
+    let personService: PersonService | null = null;
+    
+    try {
+      if (this.params.getPersonService && typeof this.params.getPersonService === 'function') {
+        personService = this.params.getPersonService();
+      }
+    } catch (error) {
+      console.warn('Could not get person service from params:', error);
+    }
+    
+    // If no service available, use fallback
+    if (!personService) {
+      personService = this.getDefaultPersonService();
+    }
+    
     const person = personService.getPersonById(trade.cancelledBy);
     
     if (!person) {
@@ -108,6 +142,21 @@ export class CancelledByCellComponent implements ICellRendererAngularComp, OnIni
     this.displayData = {
       initials: person.initials,
       fullName: person.fullName
+    };
+  }
+
+  private getDefaultPersonService(): PersonService {
+    const persons = [
+      { id: 'user1', fullName: 'John Smith', initials: 'JS' },
+      { id: 'user2', fullName: 'Jane Doe', initials: 'JD' },
+      { id: 'user3', fullName: 'Michael Johnson', initials: 'MJ' },
+      { id: 'user4', fullName: 'Sarah Wilson', initials: 'SW' },
+      { id: 'user5', fullName: 'David Brown', initials: 'DB' },
+    ];
+    
+    return {
+      getPersonById: (id: string) => persons.find(p => p.id === id),
+      getAllPersons: () => persons
     };
   }
 }

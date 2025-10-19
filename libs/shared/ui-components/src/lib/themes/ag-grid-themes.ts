@@ -3,6 +3,7 @@ import { themeQuartz } from 'ag-grid-community';
 /**
  * Custom AG Grid themes for the Trade Platform
  * Following AG Grid v33+ theming API best practices
+ * Supports both Community and Enterprise features
  */
 
 // Dark theme configuration

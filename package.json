@@ -16,6 +16,7 @@
     "@angular/router": "~20.3.0",
     "ag-grid-angular": "^34.2.0",
     "ag-grid-community": "^34.2.0",
+    "ag-grid-enterprise": "^34.2.0",
     "rxjs": "~7.8.0",
     "zone.js": "~0.15.0"
   },

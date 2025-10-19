@@ -22,13 +22,17 @@ import {
   GridReadyEvent,
   ModuleRegistry,
   AllCommunityModule,
-  ICellRendererParams,
+  GridOptions,
 } from 'ag-grid-community';
-import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
-import { ThemeService, DEFAULT_THEME } from '@trade-platform/shared/ui-components';
 
-// Register AG Grid modules
-ModuleRegistry.registerModules([AllCommunityModule]);
+// Import Enterprise modules
+import { AllEnterpriseModule } from 'ag-grid-enterprise';
+
+import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
+import { ThemeService, DEFAULT_THEME, setupAgGridLicense } from '@trade-platform/shared/ui-components';
+
+// Register AG Grid modules including Enterprise
+ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule]);
 
 export interface TradeData {
   id: string;
@@ -91,99 +95,179 @@ export class TradeGrid implements OnInit, OnChanges {
     ]
   };
 
-  columnDefs: ColDef<TradeData>[] = [
-    {
-      field: 'symbol',
-      headerName: 'Symbol',
-      sortable: true,
-      filter: true,
-      width: 100,
-    },
-    {
-      field: 'price',
-      headerName: 'Price',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      valueFormatter: (params) => `$${params.value?.toFixed(2)}`,
-      width: 120,
-    },
-    {
-      field: 'quantity',
-      headerName: 'Quantity',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      width: 120,
-    },
-    {
-      field: 'side',
-      headerName: 'Side',
-      sortable: true,
-      filter: true,
-      width: 100,
-    },
-    {
-      field: 'timestamp',
-      headerName: 'Time',
-      sortable: true,
-      filter: 'agDateColumnFilter',
-      valueFormatter: (params) => new Date(params.value).toLocaleString(),
-      width: 200,
-    },
-    {
-      field: 'trader',
-      headerName: 'Trader',
-      sortable: true,
-      filter: true,
-      width: 150,
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      sortable: true,
-      filter: true,
-      width: 120,
-      cellStyle: (params) => {
-        if (params.value === 'CANCELLED') {
-          return { color: '#ef4444', fontWeight: '600' };
-        }
-        return { color: '#10b981', fontWeight: '600' };
-      },
-    },
-    {
-      field: 'cancelledBy',
-      headerName: 'Cancelled By',
-      sortable: true,
-      filter: true,
-      width: 130,
-      cellRenderer: CancelledByCellComponent,
-      cellRendererParams: {
-        getPersonService: () => this.getPersonService()
-      },
-    },
-    {
-      headerName: 'Actions',
-      width: 120,
-      cellRenderer: (params: ICellRendererParams<TradeData>) => {
-        const trade = params.data;
-        if (!trade || trade.status === 'CANCELLED') {
-          return '<span style="color: #9ca3af;">N/A</span>';
-        }
-        return '<button class="cancel-btn">Cancel</button>';
-      },
-      onCellClicked: (params) => {
-        const trade = params.data;
-        if (trade && trade.status === 'ACTIVE') {
-          this.cancelTrade.emit(trade.id);
-        }
-      },
-    },
-  ];
-
+    // Grid configuration with enterprise features
   defaultColDef: ColDef = {
     flex: 1,
     minWidth: 100,
     resizable: true,
+    sortable: true,
+    filter: true,
+    enableRowGroup: false,
+    enablePivot: false,
+    enableValue: false,
   };
+
+  gridOptions: GridOptions = {
+    rowGroupPanelShow: 'always',
+    rowSelection: {
+      mode: 'multiRow',
+      enableClickSelection: true,
+      groupSelects: 'descendants'
+    },
+    cellSelection: true,
+    suppressAggFuncInHeader: false,
+    groupDefaultExpanded: 1,
+    animateRows: true,
+    sideBar: {
+      toolPanels: [
+        {
+          id: 'columns',
+          labelDefault: 'Columns',
+          labelKey: 'columns',
+          iconKey: 'columns',
+          toolPanel: 'agColumnsToolPanel',
+        },
+        {
+          id: 'filters',
+          labelDefault: 'Filters',
+          labelKey: 'filters',
+          iconKey: 'filter',
+          toolPanel: 'agFiltersToolPanel',
+        }
+      ],
+      defaultToolPanel: 'columns'
+    }
+  };
+
+  columnDefs: ColDef[] = [
+    { 
+      field: 'timestamp', 
+      headerName: 'Time',
+      width: 120,
+      sortable: true,
+      filter: 'agDateColumnFilter',
+      valueFormatter: (params) => {
+        return new Date(params.value).toLocaleTimeString();
+      }
+    },
+    { 
+      field: 'symbol', 
+      headerName: 'Symbol',
+      width: 100,
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      enableRowGroup: true,
+      rowGroup: false
+    },
+    { 
+      field: 'side', 
+      headerName: 'Side',
+      width: 80,
+      sortable: true,
+      filter: 'agSetColumnFilter',
+      enableRowGroup: true,
+      rowGroup: false,
+      cellStyle: (params) => {
+        const style: Record<string, string> = params.value === 'BUY' 
+          ? { color: '#4caf50', fontWeight: 'bold' }
+          : { color: '#f44336', fontWeight: 'bold' };
+        return style;
+      }
+    },
+    { 
+      field: 'quantity', 
+      headerName: 'Quantity',
+      width: 120,
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      enableValue: true,
+      aggFunc: 'sum',
+      valueFormatter: (params) => {
+        const value = params.value;
+        if (typeof value === 'number' && !isNaN(value)) {
+          return value.toLocaleString();
+        }
+        return '0';
+      }
+    },
+    { 
+      field: 'price', 
+      headerName: 'Price',
+      width: 120,
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      enableValue: true,
+      aggFunc: 'avg',
+      valueFormatter: (params) => {
+        const value = params.value;
+        if (typeof value === 'number' && !isNaN(value)) {
+          return `$${value.toFixed(2)}`;
+        }
+        return '$0.00';
+      }
+    },
+    { 
+      field: 'trader', 
+      headerName: 'Trader',
+      width: 120,
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      enableRowGroup: true,
+      rowGroup: false
+    },
+    { 
+      field: 'status', 
+      headerName: 'Status',
+      width: 100,
+      sortable: true,
+      filter: 'agSetColumnFilter',
+      enableRowGroup: true,
+      rowGroup: false,
+      cellStyle: (params) => {
+        const status = params.value?.toLowerCase();
+        const style: Record<string, string> = { fontWeight: 'bold' };
+        switch (status) {
+          case 'filled':
+            style['color'] = '#4caf50';
+            break;
+          case 'cancelled':
+            style['color'] = '#f44336';
+            break;
+          case 'pending':
+            style['color'] = '#ff9800';
+            break;
+          default:
+            style['color'] = '#9e9e9e';
+            break;
+        }
+        return style;
+      }
+    },
+    {
+      field: 'cancelledBy',
+      headerName: 'Cancelled By',
+      width: 120,
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      cellRenderer: CancelledByCellComponent,
+      enableRowGroup: true,
+      rowGroup: false,
+      valueGetter: (params) => {
+        const trade = params.data;
+        if (!trade || trade.status !== 'CANCELLED' || !trade.cancelledBy) {
+          return null;
+        }
+        
+        const personService = this.getPersonService();
+        const person = personService.getPersonById(trade.cancelledBy);
+        
+        return person ? person.fullName : `Unknown (${trade.cancelledBy})`;
+      },
+      cellRendererParams: {
+        getPersonService: () => this.getPersonService()
+      }
+    }
+  ];
 
   rowSelectionOptions = {
     mode: 'multiRow' as const,
@@ -197,6 +281,32 @@ export class TradeGrid implements OnInit, OnChanges {
     // Component initialized
     console.log('TradeGrid initialized');
     this.updateTheme();
+    this.initializeColumnDefs();
+    this.setupEnterpriseLicense();
+  }
+
+  private async setupEnterpriseLicense(): Promise<void> {
+    try {
+      await setupAgGridLicense({
+        silent: false,
+        forceInDevelopment: true
+      });
+    } catch (error) {
+      console.warn('AG Grid license setup failed:', error);
+    }
+  }
+
+  private initializeColumnDefs(): void {
+    // Update the cancelled by column with proper service binding
+    const cancelledByColIndex = this.columnDefs.findIndex(col => col.field === 'cancelledBy');
+    if (cancelledByColIndex >= 0) {
+      this.columnDefs[cancelledByColIndex] = {
+        ...this.columnDefs[cancelledByColIndex],
+        cellRendererParams: {
+          getPersonService: () => this.getPersonService()
+        }
+      };
+    }
   }
 
   ngOnChanges(): void {
