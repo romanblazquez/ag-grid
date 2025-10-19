@@ -100,12 +100,7 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
-        showRowGroup: true, // Show grouped column values
         cellStyle: baseCellStyle,
-        // Group cell renderer for better display when grouped
-        cellRendererParams: {
-          suppressCount: false, // Show count in group headers
-        },
       },
       {
         field: 'side',
@@ -121,10 +116,6 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
-        showRowGroup: true, // Show grouped column values
-        cellRendererParams: {
-          suppressCount: false, // Show count in group headers
-        },
         cellStyle: (params) => {
           const style: Record<string, string> =
             params.value === 'BUY'
@@ -197,10 +188,6 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
-        showRowGroup: true, // Show grouped column values
-        cellRendererParams: {
-          suppressCount: false, // Show count in group headers
-        },
         cellStyle: baseCellStyle,
       },
       {
@@ -217,10 +204,6 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
-        showRowGroup: true, // Show grouped column values
-        cellRendererParams: {
-          suppressCount: false, // Show count in group headers
-        },
         cellStyle: (params) => {
           const status = params.value;
           const style: Record<string, string> = { fontWeight: 'bold' };
@@ -292,7 +275,8 @@ export class TradeGridColumnsConfig {
       sortable: true,
       filter: true,
       floatingFilter: true, // Enable floating filters for better UX
-      enableRowGroup: false,
+      // Remove enableRowGroup: false to allow individual columns to set their own grouping
+      // enableRowGroup: false,  // This was preventing individual columns from being groupable
       enablePivot: false,
       enableValue: false,
       cellStyle: {

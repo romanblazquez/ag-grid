@@ -74,15 +74,26 @@ export class TradeGrid implements OnInit, OnChanges {
     rowGroupPanelShow: 'always',
     groupDefaultExpanded: 1, // Auto-expand first level of groups
     
+    // Enable all grouping features
+    enableRangeSelection: true,
+    enableCharts: true,
+    enableAdvancedFilter: true,
+    
     // Enhanced grouping features with filtering
     groupSelectsChildren: true, // Selecting group selects all children
     groupSelectsFiltered: true, // Only select filtered children
     groupDisplayType: 'multipleColumns', // Display group columns separately
     showOpenedGroup: true, // Keep showing grouped column values
     
+    // Disable sticky group behavior
+    suppressGroupRowsSticky: true, // Prevent group rows from sticking to top when scrolling
+    
     // Group filtering and aggregation
     groupHideOpenParents: false, // Keep parent groups visible
     groupSuppressBlankHeader: true, // Clean headers for groups
+    
+    // Explicitly enable row grouping functionality
+    suppressRowGroupHidesColumns: false, // Allow columns to be hidden when grouped
     
     // Row selection configuration with header checkbox
     rowSelection: {
