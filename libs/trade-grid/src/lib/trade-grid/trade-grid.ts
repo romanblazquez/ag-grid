@@ -141,7 +141,7 @@ export class TradeGrid implements OnInit, OnChanges {
   rowSelectionOptions = {
     mode: 'multiRow' as const,
     checkboxes: true,
-    isRowSelectable: (rowNode: any) => {
+    isRowSelectable: (rowNode: { data?: TradeData }) => {
       return rowNode.data?.status === 'ACTIVE';
     },
   };
@@ -173,11 +173,11 @@ export class TradeGrid implements OnInit, OnChanges {
   onCancelSelected(): void {
     const selectedNodes = this.gridApi?.getSelectedNodes() || [];
     const selectedActiveTrades = selectedNodes.filter(
-      (node: any) => node.data?.status === 'ACTIVE'
+      (node: { data?: TradeData }) => node.data?.status === 'ACTIVE'
     );
 
     if (selectedActiveTrades.length > 0) {
-      const tradeIds = selectedActiveTrades.map((node: any) => node.data.id);
+      const tradeIds = selectedActiveTrades.map((node: { data: TradeData }) => node.data.id);
       this.cancelSelectedTrades.emit(tradeIds);
     }
   }
@@ -189,7 +189,7 @@ export class TradeGrid implements OnInit, OnChanges {
     }
     const selectedNodes = this.gridApi.getSelectedNodes() || [];
     this.selectedActiveCount = selectedNodes.filter(
-      (node: any) => node.data?.status === 'ACTIVE'
+      (node: { data?: TradeData }) => node.data?.status === 'ACTIVE'
     ).length;
   }
 

@@ -1,4 +1,4 @@
-<div class="trade-grid-container" (click)="hideContextMenu()">
+<div class="trade-grid-container" (click)="hideContextMenu()" tabindex="0" (keydown.enter)="hideContextMenu()" (keydown.space)="hideContextMenu()">
   <div class="grid-toolbar">
     <button
       class="bulk-cancel-btn"
@@ -22,32 +22,34 @@
     (gridReady)="onGridReady($event)"
     (selectionChanged)="onSelectionChanged()"
     (contextmenu)="onContextMenu($event)"
-  />
+  ></ag-grid-angular>
 
   <!-- Custom Context Menu -->
   <div
     *ngIf="showContextMenu"
     class="custom-context-menu"
+    role="menu"
+    tabindex="0"
     [style.left.px]="contextMenuX"
     [style.top.px]="contextMenuY"
-    (click)="$event.stopPropagation()"
   >
-    <div
+    <button
+      type="button"
       class="context-menu-item"
       [class.disabled]="selectedActiveCount === 0"
-      (click)="onContextMenuCancelSelected()"
+      [disabled]="selectedActiveCount === 0"
+      (click)="onContextMenuCancelSelected(); hideContextMenu()"
     >
       <span class="menu-icon">✖</span>
       <span>Cancel Selected ({{ selectedActiveCount }})</span>
-    </div>
-    <div class="context-menu-divider"></div>
-    <div class="context-menu-item" (click)="hideContextMenu()">
+    </button>
+    <button type="button" class="context-menu-item" (click)="hideContextMenu()">
       <span class="menu-icon">📋</span>
       <span>Copy</span>
-    </div>
-    <div class="context-menu-item" (click)="hideContextMenu()">
+    </button>
+    <button type="button" class="context-menu-item" (click)="hideContextMenu()">
       <span class="menu-icon">📊</span>
       <span>Export</span>
-    </div>
+    </button>
   </div>
 </div>

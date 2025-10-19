@@ -20,58 +20,27 @@ export class TradeDataService {
   }
 
   private initializeData(): void {
-    const initialTrades: ITradeData[] = [
-      {
-        id: this.generateId(),
-        symbol: 'AAPL',
-        price: 175.5,
-        quantity: 100,
-        side: 'BUY',
-        timestamp: new Date(),
-        trader: 'John Doe',
-        status: 'ACTIVE',
-      },
-      {
-        id: this.generateId(),
-        symbol: 'GOOGL',
-        price: 142.3,
-        quantity: 50,
-        side: 'SELL',
-        timestamp: new Date(),
-        trader: 'Jane Smith',
-        status: 'ACTIVE',
-      },
-      {
-        id: this.generateId(),
-        symbol: 'MSFT',
-        price: 380.25,
-        quantity: 75,
-        side: 'BUY',
-        timestamp: new Date(),
-        trader: 'Bob Johnson',
-        status: 'ACTIVE',
-      },
-      {
-        id: this.generateId(),
-        symbol: 'TSLA',
-        price: 245.8,
-        quantity: 200,
-        side: 'BUY',
-        timestamp: new Date(),
-        trader: 'Alice Williams',
-        status: 'ACTIVE',
-      },
-      {
-        id: this.generateId(),
-        symbol: 'AMZN',
-        price: 178.9,
-        quantity: 150,
-        side: 'SELL',
-        timestamp: new Date(),
-        trader: 'Charlie Brown',
-        status: 'ACTIVE',
-      },
-    ];
+    const initialTrades: ITradeData[] = [];
+    const now = new Date();
+
+    // Generate 200 sample trades
+    for (let i = 0; i < 200; i++) {
+      const trade = this.generateRandomTrade();
+      // Vary timestamps over the past 24 hours
+      const hoursAgo = Math.floor(Math.random() * 24);
+      const minutesAgo = Math.floor(Math.random() * 60);
+      trade.timestamp = new Date(now.getTime() - (hoursAgo * 60 * 60 * 1000) - (minutesAgo * 60 * 1000));
+
+      // Randomly set some trades as cancelled (about 20%)
+      if (Math.random() < 0.2) {
+        trade.status = 'CANCELLED';
+      }
+
+      initialTrades.push(trade);
+    }
+
+    // Sort by timestamp descending (newest first)
+    initialTrades.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     this.tradesSubject.next(initialTrades);
   }
