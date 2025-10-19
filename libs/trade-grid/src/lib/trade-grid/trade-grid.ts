@@ -1,7 +1,17 @@
-import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  OnChanges,
+  Output,
+  EventEmitter,
+  ChangeDetectorRef,
+  inject,
+} from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   ColDef,
+  GridApi,
   GridReadyEvent,
   ModuleRegistry,
   AllCommunityModule,
@@ -36,14 +46,19 @@ export class TradeGrid implements OnInit, OnChanges {
 
   // Use the new Theming API (v33+)
   theme = themeQuartz;
-
   selectedActiveCount = 0;
-  private gridApi: any;
+  private gridApi: GridApi | null = null;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  private readonly cdr = inject(ChangeDetectorRef);
 
   columnDefs: ColDef<TradeData>[] = [
-    { field: 'symbol', headerName: 'Symbol', sortable: true, filter: true, width: 100 },
+    {
+      field: 'symbol',
+      headerName: 'Symbol',
+      sortable: true,
+      filter: true,
+      width: 100,
+    },
     {
       field: 'price',
       headerName: 'Price',
@@ -59,7 +74,13 @@ export class TradeGrid implements OnInit, OnChanges {
       filter: 'agNumberColumnFilter',
       width: 120,
     },
-    { field: 'side', headerName: 'Side', sortable: true, filter: true, width: 100 },
+    {
+      field: 'side',
+      headerName: 'Side',
+      sortable: true,
+      filter: true,
+      width: 100,
+    },
     {
       field: 'timestamp',
       headerName: 'Time',
@@ -68,7 +89,13 @@ export class TradeGrid implements OnInit, OnChanges {
       valueFormatter: (params) => new Date(params.value).toLocaleString(),
       width: 200,
     },
-    { field: 'trader', headerName: 'Trader', sortable: true, filter: true, width: 150 },
+    {
+      field: 'trader',
+      headerName: 'Trader',
+      sortable: true,
+      filter: true,
+      width: 150,
+    },
     {
       field: 'status',
       headerName: 'Status',
@@ -117,10 +144,13 @@ export class TradeGrid implements OnInit, OnChanges {
 
   ngOnInit(): void {
     // Component initialized
+    console.log('TradeGrid initialized');
   }
 
   ngOnChanges(): void {
     // Handle data changes if needed in the future
+    console.log('TradeGrid data changed');
+    this.cdr.detectChanges();
   }
 
   onGridReady(params: GridReadyEvent): void {
@@ -154,6 +184,8 @@ export class TradeGrid implements OnInit, OnChanges {
       return;
     }
     const selectedNodes = this.gridApi.getSelectedNodes() || [];
-    this.selectedActiveCount = selectedNodes.filter((node: any) => node.data?.status === 'ACTIVE').length;
+    this.selectedActiveCount = selectedNodes.filter(
+      (node: any) => node.data?.status === 'ACTIVE'
+    ).length;
   }
 }
