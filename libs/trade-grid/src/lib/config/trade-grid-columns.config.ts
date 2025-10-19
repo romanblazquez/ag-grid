@@ -100,7 +100,12 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
+        showRowGroup: true, // Show grouped column values
         cellStyle: baseCellStyle,
+        // Group cell renderer for better display when grouped
+        cellRendererParams: {
+          suppressCount: false, // Show count in group headers
+        },
       },
       {
         field: 'side',
@@ -116,6 +121,10 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
+        showRowGroup: true, // Show grouped column values
+        cellRendererParams: {
+          suppressCount: false, // Show count in group headers
+        },
         cellStyle: (params) => {
           const style: Record<string, string> =
             params.value === 'BUY'
@@ -139,6 +148,7 @@ export class TradeGridColumnsConfig {
         },
         enableValue: true,
         aggFunc: 'sum',
+        allowedAggFuncs: ['sum', 'avg', 'count'], // Multiple aggregation options
         cellStyle: baseCellStyle,
         valueFormatter: (params) => {
           const value = params.value;
@@ -163,6 +173,7 @@ export class TradeGridColumnsConfig {
         },
         enableValue: true,
         aggFunc: 'avg',
+        allowedAggFuncs: ['avg', 'min', 'max', 'count'], // Multiple aggregation options
         cellStyle: baseCellStyle,
         valueFormatter: (params) => {
           const value = params.value;
@@ -186,6 +197,10 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
+        showRowGroup: true, // Show grouped column values
+        cellRendererParams: {
+          suppressCount: false, // Show count in group headers
+        },
         cellStyle: baseCellStyle,
       },
       {
@@ -202,6 +217,10 @@ export class TradeGridColumnsConfig {
         },
         enableRowGroup: true,
         rowGroup: false,
+        showRowGroup: true, // Show grouped column values
+        cellRendererParams: {
+          suppressCount: false, // Show count in group headers
+        },
         cellStyle: (params) => {
           const status = params.value;
           const style: Record<string, string> = { fontWeight: 'bold' };

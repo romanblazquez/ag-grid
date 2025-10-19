@@ -70,13 +70,19 @@ export class TradeGrid implements OnInit, OnChanges {
     // Client-side row model - loads all data at once
     rowModelType: 'clientSide',
     
-    // Row grouping configuration - fully restored
+    // Row grouping configuration - fully restored with filtering
     rowGroupPanelShow: 'always',
     groupDefaultExpanded: 1, // Auto-expand first level of groups
     
-    // Enhanced grouping features
+    // Enhanced grouping features with filtering
     groupSelectsChildren: true, // Selecting group selects all children
     groupSelectsFiltered: true, // Only select filtered children
+    groupDisplayType: 'multipleColumns', // Display group columns separately
+    showOpenedGroup: true, // Keep showing grouped column values
+    
+    // Group filtering and aggregation
+    groupHideOpenParents: false, // Keep parent groups visible
+    groupSuppressBlankHeader: true, // Clean headers for groups
     
     // Row selection configuration with header checkbox
     rowSelection: {
@@ -94,7 +100,7 @@ export class TradeGrid implements OnInit, OnChanges {
     // Animation and UI
     animateRows: true,
     
-    // Side bar configuration with full grouping support
+    // Side bar configuration with full grouping support and filtering
     sideBar: {
       toolPanels: [
         {
@@ -103,6 +109,15 @@ export class TradeGrid implements OnInit, OnChanges {
           labelKey: 'columns',
           iconKey: 'columns',
           toolPanel: 'agColumnsToolPanel',
+          toolPanelParams: {
+            suppressRowGroups: false, // Show row groups section
+            suppressValues: false, // Show values section for aggregation
+            suppressPivots: false, // Show pivot section
+            suppressPivotMode: false, // Allow pivot mode
+            suppressColumnFilter: false, // Allow column filtering in sidebar
+            suppressColumnSelectAll: false, // Show select all checkbox
+            suppressColumnExpandAll: false, // Show expand all
+          },
         },
         {
           id: 'filters',
@@ -110,6 +125,11 @@ export class TradeGrid implements OnInit, OnChanges {
           labelKey: 'filters',
           iconKey: 'filter',
           toolPanel: 'agFiltersToolPanel',
+          toolPanelParams: {
+            suppressExpandAll: false, // Allow expand/collapse all filters
+            suppressFilterSearch: false, // Allow searching in filters
+            suppressSyncLayoutWithGrid: false, // Sync with grid layout
+          },
         }
       ]
     },
