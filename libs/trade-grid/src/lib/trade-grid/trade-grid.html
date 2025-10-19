@@ -1,4 +1,4 @@
-<div class="trade-grid-container">
+<div class="trade-grid-container" (click)="hideContextMenu()">
   <div class="grid-toolbar">
     <button
       class="bulk-cancel-btn"
@@ -21,5 +21,33 @@
     [animateRows]="true"
     (gridReady)="onGridReady($event)"
     (selectionChanged)="onSelectionChanged()"
+    (contextmenu)="onContextMenu($event)"
   />
+
+  <!-- Custom Context Menu -->
+  <div
+    *ngIf="showContextMenu"
+    class="custom-context-menu"
+    [style.left.px]="contextMenuX"
+    [style.top.px]="contextMenuY"
+    (click)="$event.stopPropagation()"
+  >
+    <div
+      class="context-menu-item"
+      [class.disabled]="selectedActiveCount === 0"
+      (click)="onContextMenuCancelSelected()"
+    >
+      <span class="menu-icon">✖</span>
+      <span>Cancel Selected ({{ selectedActiveCount }})</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" (click)="hideContextMenu()">
+      <span class="menu-icon">📋</span>
+      <span>Copy</span>
+    </div>
+    <div class="context-menu-item" (click)="hideContextMenu()">
+      <span class="menu-icon">📊</span>
+      <span>Export</span>
+    </div>
+  </div>
 </div>

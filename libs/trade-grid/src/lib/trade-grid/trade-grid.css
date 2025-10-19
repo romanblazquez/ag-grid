@@ -72,3 +72,53 @@
 :host ::ng-deep .cancel-btn:active {
   background: #b91c1c;
 }
+
+/* Custom Context Menu styles */
+.custom-context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 4px;
+  min-width: 200px;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.context-menu-item:hover:not(.disabled) {
+  background: #f3f4f6;
+}
+
+.context-menu-item:active:not(.disabled) {
+  background: #e5e7eb;
+}
+
+.context-menu-item.disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0;
+}
+
+.menu-icon {
+  font-size: 16px;
+  width: 16px;
+  display: inline-block;
+  text-align: center;
+}

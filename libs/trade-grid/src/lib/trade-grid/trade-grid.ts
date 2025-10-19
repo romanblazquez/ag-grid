@@ -8,6 +8,7 @@ import {
   ChangeDetectorRef,
   inject,
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   ColDef,
@@ -35,7 +36,7 @@ export interface TradeData {
 
 @Component({
   selector: 'lib-trade-grid',
-  imports: [AgGridAngular],
+  imports: [CommonModule, AgGridAngular],
   templateUrl: './trade-grid.html',
   styleUrl: './trade-grid.css',
 })
@@ -47,6 +48,9 @@ export class TradeGrid implements OnInit, OnChanges {
   // Use the new Theming API (v33+)
   theme = themeQuartz;
   selectedActiveCount = 0;
+  showContextMenu = false;
+  contextMenuX = 0;
+  contextMenuY = 0;
   private gridApi: GridApi | null = null;
 
   private readonly cdr = inject(ChangeDetectorRef);
@@ -187,5 +191,21 @@ export class TradeGrid implements OnInit, OnChanges {
     this.selectedActiveCount = selectedNodes.filter(
       (node: any) => node.data?.status === 'ACTIVE'
     ).length;
+  }
+
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    this.contextMenuX = event.clientX;
+    this.contextMenuY = event.clientY;
+    this.showContextMenu = true;
+  }
+
+  hideContextMenu(): void {
+    this.showContextMenu = false;
+  }
+
+  onContextMenuCancelSelected(): void {
+    this.onCancelSelected();
+    this.hideContextMenu();
   }
 }
