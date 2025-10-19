@@ -46,22 +46,23 @@ export const tradePlatformDarkTheme = themeQuartz.withParams({
   checkboxUncheckedBackgroundColor: '#718096',
 });
 
-// Light theme configuration (alternative)
+// Light theme configuration - properly configured for light mode
 export const tradePlatformLightTheme = themeQuartz.withParams({
   backgroundColor: '#ffffff',
   browserColorScheme: 'light',
-  chromeBackgroundColor: '#f7fafc',
-  foregroundColor: '#2d3748',
+  chromeBackgroundColor: '#f8fafc',
+  foregroundColor: '#1a202c',
   headerFontSize: 14,
   
-  // Light theme specific colors
-  headerBackgroundColor: '#f7fafc',
-  headerTextColor: '#1a202c',
-  oddRowBackgroundColor: '#f9fafb',
-  rowHoverColor: '#f0f9ff',
+  // Light theme specific colors with proper contrast
+  headerBackgroundColor: '#f1f5f9',
+  headerTextColor: '#0f172a',
+  oddRowBackgroundColor: '#f8fafc',
+  rowHoverColor: '#e2e8f0',
   selectedRowBackgroundColor: '#dbeafe',
-  borderColor: '#e2e8f0',
-  cellTextColor: '#2d3748',
+  borderColor: '#cbd5e1',
+  cellTextColor: '#1a202c',
+  textColor: '#1a202c',
   
   // Font configurations
   fontFamily: 'Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -74,10 +75,10 @@ export const tradePlatformLightTheme = themeQuartz.withParams({
   headerHeight: 44,
   rowHeight: 36,
   
-  // Colors
-  accentColor: '#6366f1',
-  checkboxCheckedShapeColor: '#6366f1',
-  checkboxUncheckedBackgroundColor: '#9ca3af',
+  // Light theme accent colors
+  accentColor: '#2563eb',
+  checkboxCheckedShapeColor: '#2563eb',
+  checkboxUncheckedBackgroundColor: '#d1d5db',
 });
 
 // High contrast theme for maximum readability

@@ -28,7 +28,6 @@ import {
 // Import Enterprise modules
 import { AllEnterpriseModule } from 'ag-grid-enterprise';
 
-import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
 import { ThemeService, DEFAULT_THEME, setupAgGridLicense } from '@trade-platform/shared/ui-components';
 import { 
   TradeGridColumnsConfig, 
@@ -41,7 +40,7 @@ ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule]);
 
 @Component({
   selector: 'lib-trade-grid',
-  imports: [CommonModule, AgGridAngular, CancelledByCellComponent, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule, MatMenuModule, MatDividerModule],
+  imports: [CommonModule, AgGridAngular, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule, MatMenuModule, MatDividerModule],
   templateUrl: './trade-grid.html',
   styleUrl: './trade-grid.css',
 })
@@ -66,7 +65,7 @@ export class TradeGrid implements OnInit, OnChanges {
   columnDefs: ColDef[] = [];
   
   // Default column definition from configuration  
-  defaultColDef: ColDef = TradeGridColumnsConfig.createDefaultColDef();
+  defaultColDef: ColDef = TradeGridColumnsConfig.createDefaultColDef(true);
 
   gridOptions: GridOptions = {
     rowGroupPanelShow: 'always',
@@ -136,7 +135,9 @@ export class TradeGrid implements OnInit, OnChanges {
   private initializeColumnDefs(): void {
     // Initialize column definitions using the configuration
     const personService = this.getPersonService();
-    this.columnDefs = TradeGridColumnsConfig.createColumnDefinitions(personService);
+    const isDarkTheme = this.themeName === 'dark' || this.themeName === 'high-contrast';
+    this.columnDefs = TradeGridColumnsConfig.createColumnDefinitions(personService, isDarkTheme);
+    this.defaultColDef = TradeGridColumnsConfig.createDefaultColDef(isDarkTheme);
   }
 
   private updateTheme(): void {
@@ -144,6 +145,8 @@ export class TradeGrid implements OnInit, OnChanges {
       const themeConfig = ThemeService.getThemeByName(this.themeName);
       if (themeConfig) {
         this.theme = themeConfig.theme;
+        // Reinitialize column definitions with new theme
+        this.initializeColumnDefs();
       }
     }
   }

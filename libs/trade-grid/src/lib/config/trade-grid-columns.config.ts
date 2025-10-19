@@ -38,13 +38,30 @@ export interface TradeData {
  * Follows the monorepo pattern of separating configuration from components
  */
 export class TradeGridColumnsConfig {
-  
   /**
    * Creates column definitions for the trade grid
    * @param personService - Service to get person details for cancelled by column
+   * @param isDarkTheme - Whether to use dark theme colors (optional)
    * @returns Array of column definitions
    */
-  static createColumnDefinitions(personService: PersonService): ColDef[] {
+  static createColumnDefinitions(
+    personService: PersonService,
+    isDarkTheme = true
+  ): ColDef[] {
+    // Theme-aware colors
+    const buyColor = isDarkTheme ? '#4ade80' : '#16a34a';
+    const sellColor = isDarkTheme ? '#f87171' : '#dc2626';
+    const filledColor = isDarkTheme ? '#4ade80' : '#16a34a';
+    const partialColor = isDarkTheme ? '#fbbf24' : '#d97706';
+    const pendingColor = isDarkTheme ? '#60a5fa' : '#2563eb';
+    const cancelledColor = isDarkTheme ? '#9ca3af' : '#6b7280';
+    const defaultColor = isDarkTheme ? '#e5e7eb' : '#0f172a';
+
+    // Base cell style for all cells to ensure proper text color
+    const baseCellStyle = {
+      color: defaultColor,
+    };
+
     return [
       {
         field: 'timestamp',
@@ -52,9 +69,10 @@ export class TradeGridColumnsConfig {
         width: 120,
         sortable: true,
         filter: 'agDateColumnFilter',
+        cellStyle: baseCellStyle,
         valueFormatter: (params) => {
           return new Date(params.value).toLocaleTimeString();
-        }
+        },
       },
       {
         field: 'symbol',
@@ -63,7 +81,8 @@ export class TradeGridColumnsConfig {
         sortable: true,
         filter: 'agTextColumnFilter',
         enableRowGroup: true,
-        rowGroup: false
+        rowGroup: false,
+        cellStyle: baseCellStyle,
       },
       {
         field: 'side',
@@ -74,11 +93,12 @@ export class TradeGridColumnsConfig {
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: (params) => {
-          const style: Record<string, string> = params.value === 'BUY'
-            ? { color: '#4caf50', fontWeight: 'bold' }
-            : { color: '#f44336', fontWeight: 'bold' };
+          const style: Record<string, string> =
+            params.value === 'BUY'
+              ? { color: buyColor, fontWeight: 'bold' }
+              : { color: sellColor, fontWeight: 'bold' };
           return style;
-        }
+        },
       },
       {
         field: 'quantity',
@@ -88,13 +108,14 @@ export class TradeGridColumnsConfig {
         filter: 'agNumberColumnFilter',
         enableValue: true,
         aggFunc: 'sum',
+        cellStyle: baseCellStyle,
         valueFormatter: (params) => {
           const value = params.value;
           if (typeof value === 'number' && !isNaN(value)) {
             return value.toLocaleString();
           }
           return '0';
-        }
+        },
       },
       {
         field: 'price',
@@ -104,13 +125,14 @@ export class TradeGridColumnsConfig {
         filter: 'agNumberColumnFilter',
         enableValue: true,
         aggFunc: 'avg',
+        cellStyle: baseCellStyle,
         valueFormatter: (params) => {
           const value = params.value;
           if (typeof value === 'number' && !isNaN(value)) {
             return `$${value.toFixed(2)}`;
           }
           return '$0.00';
-        }
+        },
       },
       {
         field: 'trader',
@@ -119,7 +141,8 @@ export class TradeGridColumnsConfig {
         sortable: true,
         filter: 'agTextColumnFilter',
         enableRowGroup: true,
-        rowGroup: false
+        rowGroup: false,
+        cellStyle: baseCellStyle,
       },
       {
         field: 'status',
@@ -130,24 +153,28 @@ export class TradeGridColumnsConfig {
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: (params) => {
-          const status = params.value?.toLowerCase();
+          const status = params.value;
           const style: Record<string, string> = { fontWeight: 'bold' };
+
           switch (status) {
-            case 'filled':
-              style['color'] = '#4caf50';
+            case 'FILLED':
+              style['color'] = filledColor;
               break;
-            case 'cancelled':
-              style['color'] = '#f44336';
+            case 'PARTIALLY_FILLED':
+              style['color'] = partialColor;
               break;
-            case 'pending':
-              style['color'] = '#ff9800';
+            case 'PENDING':
+              style['color'] = pendingColor;
+              break;
+            case 'CANCELLED':
+              style['color'] = cancelledColor;
               break;
             default:
-              style['color'] = '#9e9e9e';
-              break;
+              style['color'] = defaultColor;
           }
+
           return style;
-        }
+        },
       },
       {
         field: 'cancelledBy',
@@ -158,6 +185,7 @@ export class TradeGridColumnsConfig {
         cellRenderer: CancelledByCellComponent,
         enableRowGroup: true,
         rowGroup: false,
+        cellStyle: baseCellStyle,
         valueGetter: (params) => {
           const trade = params.data;
           if (!trade || trade.status !== 'CANCELLED' || !trade.cancelledBy) {
@@ -168,17 +196,20 @@ export class TradeGridColumnsConfig {
           return person ? person.fullName : `Unknown (${trade.cancelledBy})`;
         },
         cellRendererParams: {
-          getPersonService: () => personService
-        }
-      }
+          getPersonService: () => personService,
+        },
+      },
     ];
   }
 
   /**
    * Creates default column definition for the trade grid
+   * @param isDarkTheme - Whether to use dark theme colors (optional)
    * @returns Default column definition object
    */
-  static createDefaultColDef(): ColDef {
+  static createDefaultColDef(isDarkTheme = true): ColDef {
+    const defaultColor = isDarkTheme ? '#e5e7eb' : '#0f172a';
+    
     return {
       flex: 1,
       minWidth: 100,
@@ -188,6 +219,9 @@ export class TradeGridColumnsConfig {
       enableRowGroup: false,
       enablePivot: false,
       enableValue: false,
+      cellStyle: {
+        color: defaultColor
+      },
     };
   }
 
@@ -206,8 +240,8 @@ export class TradeGridColumnsConfig {
     ];
 
     return {
-      getPersonById: (id: string) => persons.find(p => p.id === id),
-      getAllPersons: () => persons
+      getPersonById: (id: string) => persons.find((p) => p.id === id),
+      getAllPersons: () => persons,
     };
   }
 }
