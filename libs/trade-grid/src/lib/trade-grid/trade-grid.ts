@@ -14,8 +14,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatBadgeModule } from '@angular/material/badge';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
 import {
   ColDef,
   GridApi,
@@ -40,7 +38,7 @@ ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule]);
 
 @Component({
   selector: 'lib-trade-grid',
-  imports: [CommonModule, AgGridAngular, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule, MatMenuModule, MatDividerModule],
+  imports: [CommonModule, AgGridAngular, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule],
   templateUrl: './trade-grid.html',
   styleUrl: './trade-grid.css',
 })
@@ -54,9 +52,6 @@ export class TradeGrid implements OnInit, OnChanges {
   // Use the custom dark theme from shared components
   theme = DEFAULT_THEME;
   selectedActiveCount = 0;
-  showContextMenu = false;
-  contextMenuX = 0;
-  contextMenuY = 0;
   private gridApi: GridApi | null = null;
 
   private readonly cdr = inject(ChangeDetectorRef);
@@ -171,6 +166,12 @@ export class TradeGrid implements OnInit, OnChanges {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
 
+    // Configure context menu after grid is ready
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (params.api as any).setGridOption('getContextMenuItems', () => {
+      return this.getContextMenuItems();
+    });
+
     // Auto-size columns to fit container
     setTimeout(() => {
       params.api.sizeColumnsToFit();
@@ -204,20 +205,25 @@ export class TradeGrid implements OnInit, OnChanges {
     ).length;
   }
 
-  onContextMenu(event: MouseEvent): void {
-    event.preventDefault();
-    this.contextMenuX = event.clientX;
-    this.contextMenuY = event.clientY;
-    this.showContextMenu = true;
-  }
-
-  hideContextMenu(): void {
-    this.showContextMenu = false;
-  }
-
-  onContextMenuCancelSelected(): void {
-    this.onCancelSelected();
-    this.hideContextMenu();
+  getContextMenuItems() {
+    const selectedNodes = this.gridApi?.getSelectedNodes() || [];
+    const selectedActiveTrades = selectedNodes.filter(
+      (node: { data?: TradeData }) => node.data?.status === 'ACTIVE'
+    );
+    
+    return [
+      {
+        name: `Cancel Selected (${selectedActiveTrades.length})`,
+        disabled: selectedActiveTrades.length === 0,
+        action: () => {
+          this.onCancelSelected();
+        }
+      },
+      'separator',
+      'copy',
+      'copyWithHeaders',
+      'export'
+    ];
   }
 
   // Helper method to generate sample data for testing

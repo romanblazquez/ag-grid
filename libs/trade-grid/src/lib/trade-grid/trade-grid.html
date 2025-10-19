@@ -1,4 +1,4 @@
-<div class="trade-grid-container" (click)="hideContextMenu()" tabindex="0" (keydown.enter)="hideContextMenu()" (keydown.space)="hideContextMenu()">
+<div class="trade-grid-container" tabindex="0">
   <div class="grid-toolbar">
     <button
       mat-raised-button
@@ -34,38 +34,5 @@
     [animateRows]="true"
     (gridReady)="onGridReady($event)"
     (selectionChanged)="onSelectionChanged()"
-    (contextmenu)="onContextMenu($event)"
   ></ag-grid-angular>
-
-  <!-- Custom Context Menu with Material Design -->
-  <div
-    *ngIf="showContextMenu"
-    class="custom-context-menu material-context-menu"
-    role="menu"
-    tabindex="0"
-    [style.left.px]="contextMenuX"
-    [style.top.px]="contextMenuY"
-  >
-    <button
-      mat-menu-item
-      type="button"
-      class="context-menu-item"
-      [class.disabled]="selectedActiveCount === 0"
-      [disabled]="selectedActiveCount === 0"
-      (click)="onContextMenuCancelSelected(); hideContextMenu()"
-      matTooltip="Cancel all selected trades"
-    >
-      <mat-icon>cancel</mat-icon>
-      <span>Cancel Selected ({{ selectedActiveCount }})</span>
-    </button>
-    <mat-divider></mat-divider>
-    <button mat-menu-item type="button" class="context-menu-item" (click)="hideContextMenu()">
-      <mat-icon>content_copy</mat-icon>
-      <span>Copy</span>
-    </button>
-    <button mat-menu-item type="button" class="context-menu-item" (click)="hideContextMenu()">
-      <mat-icon>file_download</mat-icon>
-      <span>Export</span>
-    </button>
-  </div>
 </div>
