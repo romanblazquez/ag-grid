@@ -69,6 +69,18 @@ export class TradeGridColumnsConfig {
         width: 120,
         sortable: true,
         filter: 'agDateColumnFilter',
+        filterParams: {
+          comparator: (filterLocalDateAtMidnight: Date, cellValue: string | Date) => {
+            const cellDate = new Date(cellValue);
+            const filterDate = filterLocalDateAtMidnight;
+            
+            if (cellDate < filterDate) return -1;
+            if (cellDate > filterDate) return 1;
+            return 0;
+          },
+          suppressAndOrCondition: false, // Allow AND/OR conditions
+          browserDatePicker: true, // Use browser's native date picker
+        },
         cellStyle: baseCellStyle,
         valueFormatter: (params) => {
           return new Date(params.value).toLocaleTimeString();
@@ -79,7 +91,13 @@ export class TradeGridColumnsConfig {
         headerName: 'Symbol',
         width: 100,
         sortable: true,
-        filter: 'agTextColumnFilter',
+        filter: 'agSetColumnFilter', // Changed to set filter for better symbol filtering
+        filterParams: {
+          values: undefined, // Will auto-populate from data
+          suppressSelectAll: false,
+          suppressSorting: false,
+          caseSensitive: false,
+        },
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: baseCellStyle,
@@ -89,7 +107,13 @@ export class TradeGridColumnsConfig {
         headerName: 'Side',
         width: 80,
         sortable: true,
-        filter: 'agSetColumnFilter', // Restored set filter for client-side row model
+        filter: 'agSetColumnFilter',
+        filterParams: {
+          values: ['BUY', 'SELL'], // Explicitly set the available values
+          suppressSelectAll: false,
+          suppressSorting: false,
+          caseSensitive: false,
+        },
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: (params) => {
@@ -106,6 +130,13 @@ export class TradeGridColumnsConfig {
         width: 120,
         sortable: true,
         filter: 'agNumberColumnFilter',
+        filterParams: {
+          allowedCharPattern: '\\d\\-\\,', // Allow digits, commas, and minus
+          numberParser: (text: string) => {
+            return text == null ? null : parseFloat(text.replace(/,/g, ''));
+          },
+          suppressAndOrCondition: false, // Allow AND/OR conditions
+        },
         enableValue: true,
         aggFunc: 'sum',
         cellStyle: baseCellStyle,
@@ -123,6 +154,13 @@ export class TradeGridColumnsConfig {
         width: 120,
         sortable: true,
         filter: 'agNumberColumnFilter',
+        filterParams: {
+          allowedCharPattern: '\\d\\-\\.\\,\\$', // Allow digits, commas, dots, dollar signs, and minus
+          numberParser: (text: string) => {
+            return text == null ? null : parseFloat(text.replace(/[$,]/g, ''));
+          },
+          suppressAndOrCondition: false, // Allow AND/OR conditions
+        },
         enableValue: true,
         aggFunc: 'avg',
         cellStyle: baseCellStyle,
@@ -139,7 +177,13 @@ export class TradeGridColumnsConfig {
         headerName: 'Trader',
         width: 120,
         sortable: true,
-        filter: 'agTextColumnFilter',
+        filter: 'agSetColumnFilter', // Changed to set filter for better trader filtering
+        filterParams: {
+          values: undefined, // Will auto-populate from data
+          suppressSelectAll: false,
+          suppressSorting: false,
+          caseSensitive: false,
+        },
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: baseCellStyle,
@@ -149,7 +193,13 @@ export class TradeGridColumnsConfig {
         headerName: 'Status',
         width: 100,
         sortable: true,
-        filter: 'agSetColumnFilter', // Restored set filter for client-side row model
+        filter: 'agSetColumnFilter',
+        filterParams: {
+          values: ['ACTIVE', 'CANCELLED', 'FILLED', 'PENDING'], // Explicitly set status values
+          suppressSelectAll: false,
+          suppressSorting: false,
+          caseSensitive: false,
+        },
         enableRowGroup: true,
         rowGroup: false,
         cellStyle: (params) => {
@@ -181,7 +231,13 @@ export class TradeGridColumnsConfig {
         headerName: 'Cancelled By',
         width: 120,
         sortable: true,
-        filter: 'agTextColumnFilter',
+        filter: 'agSetColumnFilter', // Changed to set filter for better person filtering
+        filterParams: {
+          values: undefined, // Will auto-populate from data
+          suppressSelectAll: false,
+          suppressSorting: false,
+          caseSensitive: false,
+        },
         cellRenderer: CancelledByCellComponent,
         enableRowGroup: true,
         rowGroup: false,
@@ -216,6 +272,7 @@ export class TradeGridColumnsConfig {
       resizable: true,
       sortable: true,
       filter: true,
+      floatingFilter: true, // Enable floating filters for better UX
       enableRowGroup: false,
       enablePivot: false,
       enableValue: false,
