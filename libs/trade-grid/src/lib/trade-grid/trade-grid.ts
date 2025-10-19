@@ -19,6 +19,7 @@ import {
   themeQuartz,
   ICellRendererParams,
 } from 'ag-grid-community';
+import { CancelledByCellComponent } from '../cancelled-by-cell/cancelled-by-cell.component';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -32,16 +33,29 @@ export interface TradeData {
   timestamp: Date;
   trader: string;
   status: 'ACTIVE' | 'CANCELLED';
+  cancelledBy?: string; // Person ID who cancelled the trade
+}
+
+export interface Person {
+  id: string;
+  fullName: string;
+  initials: string;
+}
+
+export interface PersonService {
+  getPersonById(id: string): Person | undefined;
+  getAllPersons(): Person[];
 }
 
 @Component({
   selector: 'lib-trade-grid',
-  imports: [CommonModule, AgGridAngular],
+  imports: [CommonModule, AgGridAngular, CancelledByCellComponent],
   templateUrl: './trade-grid.html',
   styleUrl: './trade-grid.css',
 })
 export class TradeGrid implements OnInit, OnChanges {
   @Input() rowData: TradeData[] = [];
+  @Input() personService?: PersonService;
   @Output() cancelTrade = new EventEmitter<string>();
   @Output() cancelSelectedTrades = new EventEmitter<string[]>();
 
@@ -54,6 +68,21 @@ export class TradeGrid implements OnInit, OnChanges {
   private gridApi: GridApi | null = null;
 
   private readonly cdr = inject(ChangeDetectorRef);
+
+  // Default person service with mock data
+  private defaultPersonService: PersonService = {
+    getPersonById: (id: string) => {
+      const persons = this.defaultPersonService.getAllPersons();
+      return persons.find(p => p.id === id);
+    },
+    getAllPersons: () => [
+      { id: 'user1', fullName: 'John Smith', initials: 'JS' },
+      { id: 'user2', fullName: 'Jane Doe', initials: 'JD' },
+      { id: 'user3', fullName: 'Michael Johnson', initials: 'MJ' },
+      { id: 'user4', fullName: 'Sarah Wilson', initials: 'SW' },
+      { id: 'user5', fullName: 'David Brown', initials: 'DB' },
+    ]
+  };
 
   columnDefs: ColDef<TradeData>[] = [
     {
@@ -114,6 +143,17 @@ export class TradeGrid implements OnInit, OnChanges {
       },
     },
     {
+      field: 'cancelledBy',
+      headerName: 'Cancelled By',
+      sortable: true,
+      filter: true,
+      width: 130,
+      cellRenderer: CancelledByCellComponent,
+      cellRendererParams: {
+        getPersonService: () => this.getPersonService()
+      },
+    },
+    {
       headerName: 'Actions',
       width: 120,
       cellRenderer: (params: ICellRendererParams<TradeData>) => {
@@ -155,6 +195,23 @@ export class TradeGrid implements OnInit, OnChanges {
     // Handle data changes if needed in the future
     console.log('TradeGrid data changed');
     this.cdr.detectChanges();
+  }
+
+  private getPersonService(): PersonService {
+    return this.personService || this.defaultPersonService;
+  }
+
+  getCancelledByDisplay(cancelledBy: string | undefined): { initials: string; fullName: string } | null {
+    if (!cancelledBy) return null;
+    
+    const service = this.getPersonService();
+    const person = service.getPersonById(cancelledBy);
+    
+    if (!person) {
+      return { initials: cancelledBy, fullName: `Unknown (${cancelledBy})` };
+    }
+    
+    return { initials: person.initials, fullName: person.fullName };
   }
 
   onGridReady(params: GridReadyEvent): void {
@@ -207,5 +264,36 @@ export class TradeGrid implements OnInit, OnChanges {
   onContextMenuCancelSelected(): void {
     this.onCancelSelected();
     this.hideContextMenu();
+  }
+
+  // Helper method to generate sample data for testing
+  generateSampleData(): TradeData[] {
+    const symbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN'];
+    const traders = ['trader1', 'trader2', 'trader3', 'trader4'];
+    const sides: ('BUY' | 'SELL')[] = ['BUY', 'SELL'];
+    const statuses: ('ACTIVE' | 'CANCELLED')[] = ['ACTIVE', 'CANCELLED'];
+    const cancelledByUsers = ['user1', 'user2', 'user3', 'user4', 'user5'];
+
+    const sampleData: TradeData[] = [];
+
+    for (let i = 1; i <= 20; i++) {
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const trade: TradeData = {
+        id: `trade-${i}`,
+        symbol: symbols[Math.floor(Math.random() * symbols.length)],
+        price: Math.random() * 1000 + 50,
+        quantity: Math.floor(Math.random() * 1000) + 1,
+        side: sides[Math.floor(Math.random() * sides.length)],
+        timestamp: new Date(Date.now() - Math.random() * 86400000 * 30), // Random time in last 30 days
+        trader: traders[Math.floor(Math.random() * traders.length)],
+        status: status,
+        cancelledBy: status === 'CANCELLED' ? 
+          cancelledByUsers[Math.floor(Math.random() * cancelledByUsers.length)] : 
+          undefined
+      };
+      sampleData.push(trade);
+    }
+
+    return sampleData;
   }
 }

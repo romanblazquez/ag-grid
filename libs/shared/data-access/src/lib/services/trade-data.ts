@@ -34,6 +34,9 @@ export class TradeDataService {
       // Randomly set some trades as cancelled (about 20%)
       if (Math.random() < 0.2) {
         trade.status = 'CANCELLED';
+        // Assign random canceller for demo purposes
+        const cancellerIds = ['user1', 'user2', 'admin1', 'supervisor1', 'supervisor2'];
+        trade.cancelledBy = cancellerIds[Math.floor(Math.random() * cancellerIds.length)];
       }
 
       initialTrades.push(trade);
@@ -97,22 +100,22 @@ export class TradeDataService {
     return this.trades$.pipe(map((trades) => trades.length));
   }
 
-  cancelTrade(tradeId: string): void {
+  cancelTrade(tradeId: string, cancelledBy: string = 'user1'): void {
     const currentTrades = this.tradesSubject.value;
     const updatedTrades = currentTrades.map((trade) =>
       trade.id === tradeId && trade.status === 'ACTIVE'
-        ? { ...trade, status: 'CANCELLED' as const }
+        ? { ...trade, status: 'CANCELLED' as const, cancelledBy }
         : trade
     );
     this.tradesSubject.next(updatedTrades);
   }
 
-  cancelMultipleTrades(tradeIds: string[]): void {
+  cancelMultipleTrades(tradeIds: string[], cancelledBy: string = 'user1'): void {
     const currentTrades = this.tradesSubject.value;
     const tradeIdSet = new Set(tradeIds);
     const updatedTrades = currentTrades.map((trade) =>
       tradeIdSet.has(trade.id) && trade.status === 'ACTIVE'
-        ? { ...trade, status: 'CANCELLED' as const }
+        ? { ...trade, status: 'CANCELLED' as const, cancelledBy }
         : trade
     );
     this.tradesSubject.next(updatedTrades);

@@ -29,6 +29,7 @@
   <section class="trade-section">
     <lib-trade-grid
       [rowData]="tradeData"
+      [personService]="personService"
       (cancelTrade)="onCancelTrade($event)"
       (cancelSelectedTrades)="onCancelSelectedTrades($event)"
     ></lib-trade-grid>
