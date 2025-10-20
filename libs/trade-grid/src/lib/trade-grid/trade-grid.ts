@@ -32,13 +32,14 @@ import {
   PersonService, 
   TradeData 
 } from '../config';
+import { TradeCancellationComponent, CancellationRequest } from '../trade-cancellation/trade-cancellation.component';
 
 // Register AG Grid modules including Enterprise
 ModuleRegistry.registerModules([AllCommunityModule, AllEnterpriseModule]);
 
 @Component({
   selector: 'lib-trade-grid',
-  imports: [CommonModule, AgGridAngular, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule],
+  imports: [CommonModule, AgGridAngular, MatButtonModule, MatIconModule, MatTooltipModule, MatBadgeModule, TradeCancellationComponent],
   templateUrl: './trade-grid.html',
   styleUrl: './trade-grid.css',
 })
@@ -48,6 +49,7 @@ export class TradeGrid implements OnInit, OnChanges {
   @Input() themeName?: string = 'dark'; // Allow theme selection via input
   @Output() cancelTrade = new EventEmitter<string>();
   @Output() cancelSelectedTrades = new EventEmitter<string[]>();
+  @Output() tradesConfirmedCancellation = new EventEmitter<CancellationRequest>();
 
   // Use the custom dark theme from shared components
   theme = DEFAULT_THEME;
@@ -256,6 +258,33 @@ export class TradeGrid implements OnInit, OnChanges {
     this.selectedActiveCount = selectedNodes.filter(
       (node: { data?: TradeData }) => node.data?.status === 'ACTIVE'
     ).length;
+  }
+
+  getSelectedTrades(): TradeData[] {
+    if (!this.gridApi) {
+      return [];
+    }
+    const selectedNodes = this.gridApi.getSelectedNodes() || [];
+    return selectedNodes
+      .filter((node: { data?: TradeData }) => node.data?.status === 'ACTIVE')
+      .map((node: { data: TradeData }) => node.data);
+  }
+
+  onCancellationConfirmed(request: CancellationRequest): void {
+    // Emit the confirmed cancellation to parent
+    this.tradesConfirmedCancellation.emit(request);
+    
+    // Also emit the legacy events for backward compatibility
+    if (request.type === 'single' && request.tradeIds.length === 1) {
+      this.cancelTrade.emit(request.tradeIds[0]);
+    } else {
+      this.cancelSelectedTrades.emit(request.tradeIds);
+    }
+  }
+
+  onCancellationCancelled(): void {
+    console.log('Cancellation was cancelled by user');
+    // Could emit a specific event if needed for tracking
   }
 
   getContextMenuItems() {

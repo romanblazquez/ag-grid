@@ -24,7 +24,7 @@ export class TradeDataService {
     const now = new Date();
 
     // Generate 200 sample trades
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 20; i++) {
       const trade = this.generateRandomTrade();
       // Vary timestamps over the past 24 hours
       const hoursAgo = Math.floor(Math.random() * 24);

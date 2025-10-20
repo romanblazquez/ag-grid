@@ -1,25 +1,13 @@
 <div class="trade-grid-container" tabindex="0">
   <div class="grid-toolbar">
-    <button
-      mat-raised-button
-      color="warn"
-      class="bulk-cancel-btn"
-      (click)="onCancelSelected()"
-      [disabled]="selectedActiveCount === 0"
-      matTooltip="Cancel all selected active trades"
-      matTooltipPosition="above"
-    >
-      <mat-icon>cancel</mat-icon>
-      Cancel Selected
-      <span 
-        *ngIf="selectedActiveCount > 0" 
-        class="selected-count"
-        matBadge="{{ selectedActiveCount }}"
-        matBadgePosition="after"
-        matBadgeColor="accent"
-        matBadgeSize="small"
-      ></span>
-    </button>
+    <lib-trade-cancellation
+      [selectedTrades]="getSelectedTrades()"
+      [personService]="personService"
+      [currentUser]="'user2'"
+      [requireConfirmation]="true"
+      (cancellationConfirmed)="onCancellationConfirmed($event)"
+      (cancellationCancelled)="onCancellationCancelled()"
+    ></lib-trade-cancellation>
   </div>
 
   <ag-grid-angular

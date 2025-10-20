@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
-import { TradeGrid, TradeData, PersonService } from '@trade-platform/trade-grid';
+import { TradeGrid, TradeData, PersonService, CancellationRequest } from '@trade-platform/trade-grid';
 import { TradeDataService } from '@trade-platform/shared/data-access';
 import { StatsCard, ThemeSwitcher } from '@trade-platform/shared/ui-components';
 
@@ -67,6 +67,22 @@ export class ShellFeature implements OnInit, OnDestroy {
       // In a real app, you'd get the current user from an auth service
       const currentUser = 'user2'; // Simulating current logged-in user
       this.tradeDataService.cancelMultipleTrades(tradeIds, currentUser);
+    }
+  }
+
+  onTradesConfirmedCancellation(request: CancellationRequest): void {
+    console.log('Confirmed cancellation:', request);
+    
+    // In a real app, you'd get the current user from an auth service
+    const currentUser = 'user2'; // Simulating current logged-in user
+    
+    if (request.tradeIds.length > 0) {
+      this.tradeDataService.cancelMultipleTrades(request.tradeIds, currentUser);
+      
+      // Log some analytics or notifications
+      console.log(`Successfully cancelled ${request.tradeIds.length} trade${request.tradeIds.length > 1 ? 's' : ''}`);
+      
+      // Could emit notifications, show success toasts, etc.
     }
   }
 
