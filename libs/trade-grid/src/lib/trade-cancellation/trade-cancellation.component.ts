@@ -143,6 +143,14 @@ export class TradeCancellationComponent implements OnInit {
     }
   }
 
+  /**
+   * Public method to trigger cancellation programmatically (e.g., from context menu)
+   * This uses the same confirmation flow as the button click
+   */
+  triggerCancellation(): void {
+    this.requestCancellation();
+  }
+
   private openConfirmationDialog(request: CancellationRequest): void {
     const dialogRef = this.dialog.open(CancellationConfirmationDialogComponent, {
       width: '500px',

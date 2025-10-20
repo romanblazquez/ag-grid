@@ -6,6 +6,7 @@ import {
   Output,
   EventEmitter,
   ChangeDetectorRef,
+  ViewChild,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -50,6 +51,8 @@ export class TradeGrid implements OnInit, OnChanges {
   @Output() cancelTrade = new EventEmitter<string>();
   @Output() cancelSelectedTrades = new EventEmitter<string[]>();
   @Output() tradesConfirmedCancellation = new EventEmitter<CancellationRequest>();
+
+  @ViewChild(TradeCancellationComponent) cancellationComponent?: TradeCancellationComponent;
 
   // Use the custom dark theme from shared components
   theme = DEFAULT_THEME;
@@ -237,6 +240,10 @@ export class TradeGrid implements OnInit, OnChanges {
     this.updateSelectedCount();
   }
 
+  /**
+   * @deprecated This method is kept for backward compatibility.
+   * Context menu and toolbar button now use TradeCancellationComponent for consistent UX.
+   */
   onCancelSelected(): void {
     const selectedNodes = this.gridApi?.getSelectedNodes() || [];
     const selectedActiveTrades = selectedNodes.filter(
@@ -298,7 +305,8 @@ export class TradeGrid implements OnInit, OnChanges {
         name: `Cancel Selected (${selectedActiveTrades.length})`,
         disabled: selectedActiveTrades.length === 0,
         action: () => {
-          this.onCancelSelected();
+          // Use the cancellation component for consistent confirmation flow
+          this.cancellationComponent?.triggerCancellation();
         }
       },
       'separator',
