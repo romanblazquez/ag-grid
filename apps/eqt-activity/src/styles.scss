@@ -49,3 +49,101 @@ body {
 /* Material Icons */
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+/* Shepherd.js guided tour styles */
+@import 'shepherd.js/dist/css/shepherd.css';
+
+/* Shepherd dark-theme overrides */
+.shepherd-theme-dark .shepherd-content,
+.shepherd-element {
+  background: #1e1e2e !important;
+  border: 1px solid #313244 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+  color: #cdd6f4 !important;
+  font-family: system-ui, sans-serif !important;
+}
+
+.shepherd-element .shepherd-header {
+  background: #181825 !important;
+  border-bottom: 1px solid #313244 !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 14px 16px !important;
+}
+
+.shepherd-element .shepherd-title {
+  color: #89b4fa !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+.shepherd-element .shepherd-text {
+  color: #cdd6f4 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  padding: 14px 16px !important;
+}
+
+.shepherd-element .shepherd-footer {
+  background: #181825 !important;
+  border-top: 1px solid #313244 !important;
+  border-radius: 0 0 12px 12px !important;
+  padding: 10px 16px !important;
+  gap: 8px !important;
+}
+
+.shepherd-element .shepherd-button {
+  background: #1976d2 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: #fff !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+
+.shepherd-element .shepherd-button:hover {
+  background: #1565c0 !important;
+}
+
+.shepherd-element .shepherd-button.shepherd-button-secondary {
+  background: transparent !important;
+  border: 1px solid #45475a !important;
+  color: #a6adc8 !important;
+}
+
+.shepherd-element .shepherd-button.shepherd-button-secondary:hover {
+  border-color: #89b4fa !important;
+  color: #89b4fa !important;
+}
+
+.shepherd-element .shepherd-cancel-icon {
+  color: #6c7086 !important;
+  font-size: 1.2rem !important;
+}
+
+.shepherd-element .shepherd-cancel-icon:hover {
+  color: #f38ba8 !important;
+}
+
+.shepherd-element[data-popper-placement^='bottom'] .shepherd-arrow::before {
+  border-bottom-color: #313244 !important;
+}
+
+.shepherd-element[data-popper-placement^='top'] .shepherd-arrow::before {
+  border-top-color: #313244 !important;
+}
+
+.shepherd-highlight {
+  outline: 2px solid #89b4fa !important;
+  outline-offset: 3px !important;
+  border-radius: 4px !important;
+}
+
+.shepherd-step-indicator {
+  font-size: 0.72rem;
+  color: #6c7086;
+  letter-spacing: 0.04em;
+}

@@ -1,0 +1,14 @@
+{
+  "mcp": {
+    "servers": {
+      "rag-codebase-search": {
+        "command": "node",
+        "args": ["/Users/mx-it202391/Projects/rag/mcp-server/index.js"],
+        "env": {
+          "RAG_API_URL": "http://localhost:3000",
+          "OLLAMA_URL": "http://localhost:11434"
+        }
+      }
+    }
+  }
+}
