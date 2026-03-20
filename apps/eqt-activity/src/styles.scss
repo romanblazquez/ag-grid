@@ -147,3 +147,32 @@ body {
   color: #6c7086;
   letter-spacing: 0.04em;
 }
+
+/* Interactive action prompt inside tour steps */
+.shepherd-action-prompt {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(137, 180, 250, 0.08);
+  border: 1px solid rgba(137, 180, 250, 0.25);
+  border-left: 3px solid #89b4fa;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #cdd6f4;
+}
+
+.shepherd-action-icon {
+  font-size: 1rem;
+  margin-right: 4px;
+}
+
+.shepherd-action-prompt strong {
+  color: #89b4fa;
+}
+
+.shepherd-action-hint {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: #6c7086;
+  font-style: italic;
+}

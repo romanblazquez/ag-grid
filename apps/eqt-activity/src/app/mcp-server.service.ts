@@ -27,8 +27,8 @@ export class McpServerService {
    * Ask the OpenAI-powered agent to interpret the query and return
    * exactly which Angular component selectors are relevant.
    */
-  agent(query: string, liveTags: string[]): Observable<{ selectors: string[]; explanation: string; steps?: { selector: string; title: string; text: string }[]; fallback?: boolean }> {
-    return this.http.post<{ selectors: string[]; explanation: string; steps?: { selector: string; title: string; text: string }[]; fallback?: boolean }>(`${this.baseUrl}/agent`, {
+  agent(query: string, liveTags: string[]): Observable<{ selectors: string[]; explanation: string; steps?: { selector: string; title: string; text: string; action?: { type: string; target?: string; instruction: string; event?: string } }[]; fallback?: boolean }> {
+    return this.http.post<{ selectors: string[]; explanation: string; steps?: { selector: string; title: string; text: string; action?: { type: string; target?: string; instruction: string; event?: string } }[]; fallback?: boolean }>(`${this.baseUrl}/agent`, {
       repo_id: this.repoId,
       query,
       live_tags: liveTags,

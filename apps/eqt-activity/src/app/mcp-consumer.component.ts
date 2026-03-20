@@ -8,6 +8,12 @@ interface TourStep {
   selector: string;
   title: string;
   text: string;
+  action?: {
+    type: string;
+    target?: string;
+    instruction: string;
+    event?: string;
+  };
 }
 
 interface MatchedComponent {
@@ -310,28 +316,60 @@ export class McpConsumerComponent implements OnDestroy {
     steps.forEach((step, index) => {
       const isFirst = index === 0;
       const isLast = index === steps.length - 1;
-      // Strip angle brackets the LLM may include in step selectors
       const cleanSelector = step.selector.replace(/^<|>$/g, '');
       let el: Element | null = null;
       try { el = document.querySelector(cleanSelector); } catch { /* invalid */ }
 
+      const hasAction = !!step.action;
+      const actionTarget = step.action?.target
+        ? step.action.target.replace(/^<|>$/g, '')
+        : cleanSelector;
+      const actionEvent = step.action?.event || (step.action?.type === 'input' ? 'change' : 'click');
+
+      // Build step text — append action instruction callout if present
+      let stepText = step.text;
+      if (hasAction) {
+        stepText += `<div class="shepherd-action-prompt">` +
+          `<span class="shepherd-action-icon">👆</span> ` +
+          `<strong>${step.action!.instruction}</strong>` +
+          `<div class="shepherd-action-hint">Interact with the UI, then click "Continue →" or the action will auto-advance.</div>` +
+          `</div>`;
+      }
+
       const buttons: object[] = [];
       if (!isFirst) {
-        buttons.push({ text: '← Back', action: () => tour.back(), secondary: true, classes: 'shepherd-button-secondary' });
+        buttons.push({ text: '← Back', action: () => tour.back(), classes: 'shepherd-button-secondary' });
       }
-      if (!isLast) {
+      if (hasAction && !isLast) {
+        buttons.push({ text: 'Skip →', action: () => tour.next(), classes: 'shepherd-button-secondary' });
+        buttons.push({ text: 'Continue →', action: () => tour.next() });
+      } else if (!isLast) {
         buttons.push({ text: 'Next →', action: () => tour.next() });
       } else {
         buttons.push({ text: 'Finish ✓', action: () => tour.complete() });
       }
 
-      tour.addStep({
+      const stepOptions: Record<string, unknown> = {
         id: `step-${index}`,
         title: `<span style="font-size:0.7rem;color:#6c7086;font-weight:400">${index + 1} / ${steps.length}</span>&nbsp; ${step.title}`,
-        text: step.text,
-        ...(el ? { attachTo: { element: cleanSelector, on: 'bottom' as const } } : {}),
+        text: stepText,
         buttons,
-      });
+      };
+
+      if (el) {
+        stepOptions['attachTo'] = { element: cleanSelector, on: 'bottom' };
+      }
+
+      // For interactive steps: unlock the overlay so the user can click through
+      if (hasAction) {
+        stepOptions['modalOverlayOpeningPadding'] = 12;
+        stepOptions['modalOverlayOpeningRadius'] = 8;
+        stepOptions['canClickTarget'] = true;
+        // Auto-advance when the user performs the action on the target element
+        stepOptions['advanceOn'] = { selector: actionTarget, event: actionEvent };
+      }
+
+      tour.addStep(stepOptions);
     });
 
     tour.on('complete', () => { this.activeTour = null; });
