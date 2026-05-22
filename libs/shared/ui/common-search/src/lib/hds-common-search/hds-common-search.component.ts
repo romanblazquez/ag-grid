@@ -220,15 +220,14 @@ export class HdsCommonSearchComponent {
   private readonly visibleResultEmitValues = computed<string[]>(() => {
     const ctx = this.serviceContext();
     if (!ctx) return [];
-    const emitKey = ctx.emitField;
     if (this.isTreeView()) {
       const out: string[] = [];
       this.walkTreeLeaves(this.searchResults() as unknown[], (item) => {
-        out.push(item[emitKey] as string);
+        out.push(this.resultIdentity(item as AbstractData));
       });
       return out;
     }
-    return this.searchResults().map((d) => d[emitKey] as string);
+    return this.searchResults().map((d) => this.resultIdentity(d));
   });
 
   private readonly visibleTextsSet = computed(
@@ -452,26 +451,46 @@ export class HdsCommonSearchComponent {
     }, 1000);
   }
 
-  onDropdownButtonClick(event?: { query?: string | null }): void {
+  toggleDropdown(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.disabled()) return;
+
     if (this.focusOutTimer !== null) {
       clearTimeout(this.focusOutTimer);
       this.focusOutTimer = null;
     }
 
-    // PrimeNG emits `query: undefined` for the close half of the dropdown
-    // toggle. Keep that click as a pure close; the next click will emit an
-    // empty/current query and reopen through `onSearch`/`openInitialPanel`.
-    if (event && event.query === undefined) return;
+    if (this.panelVisible() || this.isPrimePanelOpen()) {
+      this.closePanel();
+      return;
+    }
 
     this.isFocusedOut.set(false);
     this.focused.set(true);
     if (this.searchResults().length > 0) this.showPanel();
-    else if ((event?.query ?? '') === '') this.openInitialPanel();
+    else this.openInitialPanel();
+  }
+
+  private isPrimePanelOpen(): boolean {
+    const ac = this.autoComplete() as unknown as
+      | { overlayVisible?: boolean }
+      | undefined;
+    return !!ac?.overlayVisible;
   }
 
   private showPanel(): void {
     this.panelVisible.set(true);
     this.openPanel();
+  }
+
+  private closePanel(): void {
+    this.panelVisible.set(false);
+    const ac = this.autoComplete() as unknown as
+      | { hide?: (isFocus?: boolean) => void }
+      | undefined;
+    ac?.hide?.(true);
+    this.cancelPendingQuery();
   }
 
   private openInitialPanel(): void {
@@ -485,6 +504,13 @@ export class HdsCommonSearchComponent {
       this.showPanel();
       return;
     }
+
+    this.loadInitialResults();
+  }
+
+  private loadInitialResults(): void {
+    const ctx = this.serviceContext();
+    if (!ctx || this.disabled()) return;
 
     this.dataFacadeService
       .getInitialData(ctx, this.searchContext().searchType)
@@ -705,6 +731,10 @@ export class HdsCommonSearchComponent {
     return raw === undefined || raw === null ? '' : `${raw}`;
   }
 
+  private resultIdentity(d: AbstractData): string {
+    return this.resolveEmitKey(d) || this.resolveDisplayText(d);
+  }
+
   private resolveDisplayText(d: AbstractData): string {
     const ctx = this.serviceContext();
     const primary = ctx?.detailFields?.[0]?.name;
@@ -921,19 +951,18 @@ export class HdsCommonSearchComponent {
       }
     }
 
-    const emitKey = this.serviceContext()?.emitField;
     const visibleValues = this.visibleValueSet();
     const prevDisplaySet = new Set(prev);
     const normalizedCurrentSelected = this.currSelected().filter((d) =>
       prevDisplaySet.has(this.resolveDisplayText(d)),
     );
     const preservedData = normalizedCurrentSelected.filter(
-      (d) => !visibleValues.has(emitKey ? (d[emitKey] as string) : ''),
+      (d) => !visibleValues.has(this.resultIdentity(d)),
     );
     const dataSeen = new Set<string>();
     const mergedData: AbstractData[] = [];
     for (const d of [...preservedData, ...selection.data]) {
-      const key = emitKey ? (d[emitKey] as string) : JSON.stringify(d);
+      const key = this.resultIdentity(d) || JSON.stringify(d);
       if (!dataSeen.has(key)) {
         dataSeen.add(key);
         mergedData.push(d);
@@ -949,15 +978,21 @@ export class HdsCommonSearchComponent {
 
     this.myControl.setValue(mergedDisplay);
 
-    const allTexts = this.visibleResultDisplayTexts();
-    const selectedLower = new Set(mergedDisplay.map((t) => t.toLowerCase()));
+    const visibleValuesAfterSelection = this.visibleResultEmitValues().filter(
+      (key) => key.length > 0,
+    );
+    const selectedValues = new Set(
+      mergedData.map((d) => this.resultIdentity(d)).filter(Boolean),
+    );
     const allDisabled =
-      allTexts.length > 0 &&
-      allTexts.every((t) => selectedLower.has(t.toLowerCase()));
+      visibleValuesAfterSelection.length > 0 &&
+      visibleValuesAfterSelection.every((key) => selectedValues.has(key));
     if (allDisabled) {
       this.clearInputBox();
       this.lastTypedQuery.set('');
       this.searchQuery.set('');
+      this.searchResults.set([]);
+      this.loadInitialResults();
     }
 
     if (!this.serviceContext()?.multiselect && !this.isTreeView()) {

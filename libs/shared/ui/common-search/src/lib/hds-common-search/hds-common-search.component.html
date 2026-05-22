@@ -11,89 +11,104 @@
     variant="on"
     [class.hds-common-search__float--active]="labelRaised()"
   >
-    <p-autocomplete
-      #commonSearch
-      [inputId]="inputId()"
-      [formControl]="myControl"
-      [multiple]="true"
-      [suggestions]="suggestions"
-      [minLength]="minLengthForInputValue()"
-      [panelStyle]="panelStyle()"
-      [panelStyleClass]="resolvedPanelClass()"
-      [size]="size()"
-      styleClass="hds-search-autocomplete"
-      [class.hds-search-autocomplete--collapsed]="collapsed()"
-      [class.ng-invalid]="myControl.invalid && myControl.dirty"
-      [class.ng-dirty]="myControl.invalid && myControl.dirty"
-      (completeMethod)="onSearch($event)"
-      (onSelect)="onProxySelect()"
-      (onUnselect)="onChipRemove($any($event))"
-      (onFocus)="onFocusIn()"
-      (onBlur)="onFocusOut($any($event))"
-      (keydown)="onInputKeyDown($event)"
-      (paste)="onInputPaste($event)"
-      appendTo="body"
-      [dropdown]="dropdown()"
-      [showEmptyMessage]="false"
-      [showClear]="showClear() && chipsValue().length > 0"
-      [addOnBlur]="false"
-      [separator]="separator()"
-      (onClear)="clearSearch()"
-      (onDropdownClick)="onDropdownButtonClick($event)"
-      (onHide)="onPanelHide()"
-    >
-      <ng-template #item>
-        <span class="hidden"></span>
-      </ng-template>
+    <div class="hds-search-shell flex w-full items-stretch min-w-0">
+      <p-autocomplete
+        #commonSearch
+        [inputId]="inputId()"
+        [formControl]="myControl"
+        [multiple]="true"
+        [suggestions]="suggestions"
+        [minLength]="minLengthForInputValue()"
+        [panelStyle]="panelStyle()"
+        [panelStyleClass]="resolvedPanelClass()"
+        [size]="size()"
+        styleClass="hds-search-autocomplete"
+        [class.hds-search-autocomplete--collapsed]="collapsed()"
+        [class.ng-invalid]="myControl.invalid && myControl.dirty"
+        [class.ng-dirty]="myControl.invalid && myControl.dirty"
+        (completeMethod)="onSearch($event)"
+        (onSelect)="onProxySelect()"
+        (onUnselect)="onChipRemove($any($event))"
+        (onFocus)="onFocusIn()"
+        (onBlur)="onFocusOut($any($event))"
+        (keydown)="onInputKeyDown($event)"
+        (paste)="onInputPaste($event)"
+        appendTo="body"
+        [dropdown]="false"
+        [showEmptyMessage]="false"
+        [showClear]="showClear() && chipsValue().length > 0"
+        [addOnBlur]="false"
+        [separator]="separator()"
+        (onClear)="clearSearch()"
+        (onHide)="onPanelHide()"
+      >
+        <ng-template #item>
+          <span class="hidden"></span>
+        </ng-template>
 
-      <ng-template let-value #selecteditem>
-        {{ value }}
-      </ng-template>
+        <ng-template let-value #selecteditem>
+          {{ value }}
+        </ng-template>
 
-      <ng-template #footer>
-        @if (panelVisible()) {
-          <div
-            class="overflow-y-auto overflow-x-hidden"
-            [style.max-height]="panelMaxHeight()"
-            (mousedown)="onPanelMouseDown($event)"
-          >
-            @if (!isTreeView()) {
-              <lib-hds-grid-view-result
-                [viewContext]="serviceContext()!"
-                [searchResults]="searchResults()"
-                [autoToggle]="autoToggle()"
-                [clearSelection]="clearTrigger()"
-                [preSelected]="currSelected()"
-                [disableRule]="gridDisableRule"
-                [disableSelected]="disableSelected()"
-                [query]="lastTypedQuery()"
-                [maxSelectedRows]="maxSelectedRows()"
-                (selected)="onSelected($event)"
-                (chipRemoved)="onSelectedChipUnchecked($event)"
-              />
-            } @else {
-              <lib-hds-tree-view-result
-                [searchResults]="$any(searchResults())"
-                [detailFields]="serviceContext()!.detailFields"
-                [displayField]="serviceContext()!.detailFields[0]?.name ?? ''"
-                [emitField]="serviceContext()!.emitField"
-                [headers]="serviceContext()!.detailHeaders"
-                [fieldWidths]="serviceContext()!.fieldWidths"
-                [autoToggle]="autoToggle()"
-                [clearSelection]="clearTrigger()"
-                [preSelected]="$any(currSelected())"
-                [disableRule]="treeDisableRule"
-                [disableSelected]="disableSelected()"
-                [query]="lastTypedQuery()"
-                [maxSelectedRows]="maxSelectedRows()"
-                (selected)="onSelected($event)"
-                (chipRemoved)="onSelectedChipUnchecked($event)"
-              />
-            }
-          </div>
-        }
-      </ng-template>
-    </p-autocomplete>
+        <ng-template #footer>
+          @if (panelVisible()) {
+            <div
+              class="overflow-y-auto overflow-x-hidden"
+              [style.max-height]="panelMaxHeight()"
+              (mousedown)="onPanelMouseDown($event)"
+            >
+              @if (!isTreeView()) {
+                <lib-hds-grid-view-result
+                  [viewContext]="serviceContext()!"
+                  [searchResults]="searchResults()"
+                  [autoToggle]="autoToggle()"
+                  [clearSelection]="clearTrigger()"
+                  [preSelected]="currSelected()"
+                  [disableRule]="gridDisableRule"
+                  [disableSelected]="disableSelected()"
+                  [query]="lastTypedQuery()"
+                  [maxSelectedRows]="maxSelectedRows()"
+                  (selected)="onSelected($event)"
+                  (chipRemoved)="onSelectedChipUnchecked($event)"
+                />
+              } @else {
+                <lib-hds-tree-view-result
+                  [searchResults]="$any(searchResults())"
+                  [detailFields]="serviceContext()!.detailFields"
+                  [displayField]="serviceContext()!.detailFields[0]?.name ?? ''"
+                  [emitField]="serviceContext()!.emitField"
+                  [headers]="serviceContext()!.detailHeaders"
+                  [fieldWidths]="serviceContext()!.fieldWidths"
+                  [autoToggle]="autoToggle()"
+                  [clearSelection]="clearTrigger()"
+                  [preSelected]="$any(currSelected())"
+                  [disableRule]="treeDisableRule"
+                  [disableSelected]="disableSelected()"
+                  [query]="lastTypedQuery()"
+                  [maxSelectedRows]="maxSelectedRows()"
+                  (selected)="onSelected($event)"
+                  (chipRemoved)="onSelectedChipUnchecked($event)"
+                />
+              }
+            </div>
+          }
+        </ng-template>
+      </p-autocomplete>
+
+      @if (dropdown()) {
+        <button
+          type="button"
+          class="hds-search-dropdown-button"
+          [attr.aria-controls]="inputId()"
+          [attr.aria-expanded]="panelVisible()"
+          [disabled]="disabled()"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggleDropdown($event)"
+        >
+          <span class="pi pi-chevron-down" aria-hidden="true"></span>
+        </button>
+      }
+    </div>
     <label [for]="inputId()" (click)="focusInput()">{{
       label() || placeholder()
     }}</label>
