@@ -210,7 +210,7 @@ export class McpConsumerComponent implements OnDestroy {
 
     const liveTags = this.getLiveDomTags();
 
-    this.mcp.agent(this.query, liveTags).subscribe({
+    this.mcp.agentSmart(this.query, liveTags).subscribe({
       next: ({ selectors, explanation, steps, fallback }: { selectors: string[]; explanation: string; steps?: TourStep[]; fallback?: boolean }) => {
         this.explanation.set(explanation);
         this.isFallback.set(!!fallback);

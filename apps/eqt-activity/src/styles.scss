@@ -1,5 +1,21 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* PrimeNG + Tailwind layer order. PrimeNG sits between Tailwind base and
+   utilities so utilities (e.g. `bg-primary-50`) win over component defaults. */
+@layer tailwind-base, primeng, tailwind-utilities;
+
+@layer tailwind-base {
+  @tailwind base;
+}
+
+@layer tailwind-utilities {
+  @tailwind components;
+  @tailwind utilities;
+}
+
+/* PrimeIcons font */
+@import 'primeicons/primeicons.css';
+
 // Angular Material Theme
 @use '@angular/material' as mat;
 
