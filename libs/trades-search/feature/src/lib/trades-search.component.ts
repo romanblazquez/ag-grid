@@ -6,11 +6,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { DividerModule } from 'primeng/divider';
 import {
+  CommonSearchValue,
   HdsCommonSearchComponent,
   SearchContext,
   SearchType,
@@ -31,6 +32,7 @@ import {
   styleUrl: './trades-search.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     ButtonModule,
     CheckboxModule,
@@ -65,33 +67,35 @@ export class TradesSearchComponent {
   };
 
   readonly fundSearchContext = computed<SearchContext | null>(() =>
-    this.tradesSearchFacade.isExecutionsContext
+    this.tradesSearchFacade.isExecutionsContext()
       ? null
       : { searchType: SearchType.FundPm },
   );
 
   readonly dateError = signal('');
   readonly clearSignal = signal<object | undefined>(undefined);
+  readonly includeCancelled =
+    this.tradesSearchFacade.areCancelledTradesEnabled;
 
   readonly isSearchActive = computed(() => this.tradesSearchFacade.hasAnyFilter());
 
   readonly datePicker = viewChild<DatePickerComponent>('datePicker');
 
   // ── User actions ─────────────────────────────────────────────────────
-  selectCompanySuggestion(selected: unknown): void {
-    this.tradesSearchFacade.updateCusip(selected as string[]);
+  selectCompanySuggestion(selected: CommonSearchValue[]): void {
+    this.tradesSearchFacade.updateCusip(this.toStrings(selected));
   }
-  selectFundSuggestion(selected: unknown): void {
-    this.tradesSearchFacade.updateFunds(selected as string[]);
+  selectFundSuggestion(selected: CommonSearchValue[]): void {
+    this.tradesSearchFacade.updateFunds(this.toStrings(selected));
   }
-  selectBrokerSuggestion(selected: unknown): void {
-    this.tradesSearchFacade.updateBrokers(selected as number[]);
+  selectBrokerSuggestion(selected: CommonSearchValue[]): void {
+    this.tradesSearchFacade.updateBrokers(this.toNumbers(selected));
   }
-  selectInstrumentTypesSuggestion(selected: unknown): void {
-    this.tradesSearchFacade.updateInstrumentTypes(selected as string[]);
+  selectInstrumentTypesSuggestion(selected: CommonSearchValue[]): void {
+    this.tradesSearchFacade.updateInstrumentTypes(this.toStrings(selected));
   }
-  selectTraderSuggestion(selected: unknown): void {
-    this.tradesSearchFacade.updateTraders(selected as string[]);
+  selectTraderSuggestion(selected: CommonSearchValue[]): void {
+    this.tradesSearchFacade.updateTraders(this.toStrings(selected));
   }
 
   removeSymbol(): void {
@@ -135,10 +139,20 @@ export class TradesSearchComponent {
     if (!this.areThereErrors()) this.tradesSearchFacade.searchData();
   }
 
-  clearAll(_event: MouseEvent): void {
+  clearAll(): void {
     this.tradesSearchFacade.clearTrades();
     this.datePicker()?.clearDatePicker();
     // New reference each clear so child `effect` re-fires.
     this.clearSignal.set({});
+  }
+
+  private toStrings(values: CommonSearchValue[]): string[] {
+    return values.map((value) => `${value}`);
+  }
+
+  private toNumbers(values: CommonSearchValue[]): number[] {
+    return values
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value));
   }
 }

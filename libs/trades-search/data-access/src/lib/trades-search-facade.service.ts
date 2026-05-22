@@ -78,7 +78,8 @@ export class TradesSearchFacadeService {
       this._traders().length > 0,
   );
 
-  isExecutionsContext = false;
+  private readonly _isExecutionsContext = signal(false);
+  readonly isExecutionsContext = this._isExecutionsContext.asReadonly();
 
   // ── Search emission stream ───────────────────────────────────────────
   private readonly _searches = new Subject<TradesSearchResult>();
@@ -93,8 +94,9 @@ export class TradesSearchFacadeService {
       this.route.queryParams
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe((params) => {
-          this.isExecutionsContext =
-            params[gridViewQParams] === GridView.Executions;
+          this._isExecutionsContext.set(
+            params[gridViewQParams] === GridView.Executions,
+          );
         });
     }
   }
@@ -136,12 +138,12 @@ export class TradesSearchFacadeService {
 
   // ── Search/clear ─────────────────────────────────────────────────────
   searchData(): void {
-    const request = this.isExecutionsContext
+    const request = this.isExecutionsContext()
       ? this.getExecutionsRequestPayload()
       : this.getTradesRequestPayload();
     this._searches.next({
       request,
-      view: this.isExecutionsContext ? GridView.Executions : GridView.Trades,
+      view: this.isExecutionsContext() ? GridView.Executions : GridView.Trades,
     });
   }
 
@@ -154,6 +156,9 @@ export class TradesSearchFacadeService {
     this._symbol.set('');
     this._areCancelledTradesEnabled.set(false);
     this._datePickingMethod.set(DateSelectionType.Custom);
+    const today = new Date();
+    this._startDate.set(today);
+    this._endDate.set(new Date(today));
   }
 
   // ── Payload builders ─────────────────────────────────────────────────
@@ -188,11 +193,11 @@ export class TradesSearchFacadeService {
 
   private getStatuses(): string[] {
     if (this._areCancelledTradesEnabled()) {
-      return this.isExecutionsContext
+      return this.isExecutionsContext()
         ? allStatusesExecutions
         : allStatusesTrades;
     }
-    return this.isExecutionsContext
+    return this.isExecutionsContext()
       ? defaultStatusesExecutions
       : defaultStatusesTrades;
   }

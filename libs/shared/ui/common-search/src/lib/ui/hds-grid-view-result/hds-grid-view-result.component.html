@@ -45,8 +45,9 @@
       @if (viewContext().multiselect) {
         <p-checkbox
           [binary]="true"
-          [(ngModel)]="row.selected"
-          (click)="$event.stopPropagation(); toggle(row)"
+          [ngModel]="row.selected"
+          (click)="$event.stopPropagation()"
+          (onChange)="toggle(row)"
           [disabled]="isRowDisabled(row)"
           styleClass="shrink-0"
         />

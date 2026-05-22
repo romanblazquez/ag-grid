@@ -52,6 +52,7 @@ import { NgClass } from '@angular/common';
 import {
   AbstractData,
   CommonSearchSelection,
+  CommonSearchValue,
 } from '../model/search-result.model';
 import { Context, SearchContext } from '../model/search-context.model';
 import { AutoToggle } from '../model/auto-toggle.interface';
@@ -63,8 +64,12 @@ import {
   TrackingEventName,
   TrackingService,
 } from '../data-access/tracking.service';
-import { HdsGridViewResultComponent } from '../ui/hds-grid-view-result/hds-grid-view-result.component';
+import {
+  HdsGridViewResultComponent,
+  MultiselectRow,
+} from '../ui/hds-grid-view-result/hds-grid-view-result.component';
 import { HdsTreeViewResultComponent } from '../ui/hds-tree-view-result/hds-tree-view-result.component';
+import { TreeNode } from '../model/tree-node.model';
 
 @Component({
   selector: 'lib-hds-common-search',
@@ -84,7 +89,12 @@ import { HdsTreeViewResultComponent } from '../ui/hds-tree-view-result/hds-tree-
   ],
 })
 export class HdsCommonSearchComponent {
+  private static nextInputId = 0;
+
   readonly searchContext = input.required<SearchContext>();
+  readonly inputId = input<string>(
+    `hds-common-search-input-${++HdsCommonSearchComponent.nextInputId}`,
+  );
   readonly validators = input<ValidatorFn[]>([]);
   readonly focusOnLoad = input<boolean>(false);
   readonly minLengthForInputValue = input<number>(3);
@@ -109,8 +119,8 @@ export class HdsCommonSearchComponent {
   readonly panelMinWidth = input<string | undefined>(undefined);
   readonly panelMaxWidth = input<string | undefined>(undefined);
 
-  readonly emitSelection = output<AbstractData>();
-  readonly clearEvent = output<unknown>();
+  readonly emitSelection = output<CommonSearchValue[]>();
+  readonly clearEvent = output<CommonSearchValue[]>();
   readonly resultsChange = output<unknown[]>();
 
   readonly serviceContext = signal<Context | undefined>(undefined);
@@ -175,6 +185,12 @@ export class HdsCommonSearchComponent {
     this.collapsed() ? this.chipsValue().join(', ') : '',
   );
 
+  readonly gridDisableRule = (row: MultiselectRow): boolean =>
+    this.searchContext().disableRules?.grid?.(row) ?? false;
+
+  readonly treeDisableRule = (node: TreeNode): boolean =>
+    this.searchContext().disableRules?.tree?.(node) ?? false;
+
   private readonly visibleResultDisplayTexts = computed<string[]>(() => {
     const ctx = this.serviceContext();
     if (!ctx) return [];
@@ -217,7 +233,6 @@ export class HdsCommonSearchComponent {
 
   private readonly searchQuery = signal<string>('');
 
-  private readonly inputRef = viewChild<ElementRef>('hdsInput');
   private readonly autoComplete = viewChild<AutoComplete>('commonSearch');
 
   private readonly destroyRef = inject(DestroyRef);
@@ -375,8 +390,7 @@ export class HdsCommonSearchComponent {
       this.dataFacadeService.loadPreferences(this.searchContext());
 
       if (this.focusOnLoad()) {
-        const el = this.inputRef()?.nativeElement as HTMLElement | undefined;
-        el?.focus();
+        this.focusInput();
       }
     });
 
@@ -436,6 +450,11 @@ export class HdsCommonSearchComponent {
           this.openPanel();
         });
     }
+  }
+
+  focusInput(): void {
+    if (this.disabled()) return;
+    this.inputEl()?.focus();
   }
 
   private openPanel(): void {
@@ -647,10 +666,17 @@ export class HdsCommonSearchComponent {
   private emitCurrentSelectionState(): void {
     const data = this.currSelected();
     const emitField = this.serviceContext()?.emitField;
-    const values = emitField ? data.map((d) => d[emitField] as string) : [];
+    const values = emitField
+      ? data
+          .map((d) => d[emitField])
+          .filter(
+            (value): value is CommonSearchValue =>
+              typeof value === 'string' || typeof value === 'number',
+          )
+      : [];
     const displayText = data.map((d) => this.resolveDisplayText(d));
 
-    this.emitSelection.emit(values as unknown as AbstractData);
+    this.emitSelection.emit(values);
     this.resultsChange.emit(data);
     this.dataFacadeService.setPreference(
       this.searchContext(),
@@ -850,7 +876,7 @@ export class HdsCommonSearchComponent {
       this.currSelected.set(uniqueData);
       this.lastTypedQuery.set('');
       this.interactionType.set(CommonSearchInteractionType.FromSelection);
-      this.emitSelection.emit(selection.values as unknown as AbstractData);
+      this.emitSelection.emit(selection.values);
       this.resultsChange.emit(uniqueData);
       this.myControl.setValue(uniqueDisplay);
       this.clearInputBox();
@@ -905,7 +931,7 @@ export class HdsCommonSearchComponent {
 
     this.currSelected.set(mergedData);
     this.interactionType.set(CommonSearchInteractionType.FromSelection);
-    this.emitSelection.emit(selection.values as unknown as AbstractData);
+    this.emitSelection.emit(selection.values);
     this.resultsChange.emit(mergedData);
 
     this.myControl.setValue(mergedDisplay);
@@ -996,7 +1022,7 @@ export class HdsCommonSearchComponent {
     this.myControl.setValue([]);
     this.searchQuery.set('');
     this.lastTypedQuery.set('');
-    this.clearEvent.emit(this.myControl.value);
+    this.clearEvent.emit([]);
     this.searchResults.set([]);
     this.currSelected.set([]);
     this.panelVisible.set(false);

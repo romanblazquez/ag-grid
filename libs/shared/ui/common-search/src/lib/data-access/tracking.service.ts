@@ -20,7 +20,6 @@ export interface TrackingEvent {
 @Injectable({ providedIn: 'root' })
 export class TrackingService {
   trackEvent(event: TrackingEvent): void {
-    // eslint-disable-next-line no-console
     console.debug('[tracking]', event.action, event);
   }
 }

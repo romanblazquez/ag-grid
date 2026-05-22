@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { delay } from 'rxjs/operators';
 import { Context } from '../model/search-context.model';
 import { SearchContext } from '../model/search-context.model';
 import { SearchType } from '../model/search-type.enum';
@@ -31,10 +31,11 @@ export class DataAccessFacadeService {
   }
 
   getSuggestedData(
-    _ctx: Context,
+    ctx: Context,
     searchType: SearchType,
     query: string,
   ): Observable<AbstractData[] | TreeNode[]> {
+    void ctx;
     if (searchType === SearchType.InstrumentType) {
       return of(this.filterTree(MOCK_INSTRUMENT_TREE, query)).pipe(delay(180));
     }
@@ -45,28 +46,32 @@ export class DataAccessFacadeService {
   }
 
   getInitialData(
-    _ctx: Context,
+    ctx: Context,
     searchType: SearchType,
   ): Observable<AbstractData[] | TreeNode[]> {
+    void ctx;
     if (searchType === SearchType.InstrumentType) {
       return of(MOCK_INSTRUMENT_TREE);
     }
     return of(suggestionsFor(searchType));
   }
 
-  loadInitialData(_ctx: SearchContext): Observable<boolean> {
+  loadInitialData(ctx: SearchContext): Observable<boolean> {
+    void ctx;
     return of(true);
   }
 
-  loadPreferences(_ctx: SearchContext): void {
+  loadPreferences(ctx: SearchContext): void {
+    void ctx;
     // No-op for mock impl.
   }
 
   setPreference(
     ctx: SearchContext,
     data: unknown[],
-    _isTreeView: boolean | undefined,
+    isTreeView: boolean | undefined,
   ): void {
+    void isTreeView;
     this.preferences.update((p) => ({ ...p, [ctx.searchType]: data }));
   }
 

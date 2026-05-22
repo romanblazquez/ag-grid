@@ -53,6 +53,7 @@ export class DatePickerComponent {
   onClear(): void {
     this.range = null;
     this.selectedPreset = DateSelectionType.Custom;
+    this.errorMessage.emit('');
   }
 
   clearDatePicker(): void {

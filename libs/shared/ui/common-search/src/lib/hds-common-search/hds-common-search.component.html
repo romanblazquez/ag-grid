@@ -10,17 +10,16 @@
   <p-floatlabel variant="on">
     <p-autocomplete
       #commonSearch
-      inputId="hds-common-search-input"
+      [inputId]="inputId()"
       [formControl]="myControl"
       [multiple]="true"
       [suggestions]="suggestions"
       [minLength]="minLengthForInputValue()"
       [panelStyle]="panelStyle()"
       [panelStyleClass]="resolvedPanelClass()"
-      [class]="
-        'hds-search-autocomplete ' +
-        (myControl.invalid && myControl.dirty ? 'ng-invalid ng-dirty' : '')
-      "
+      styleClass="hds-search-autocomplete"
+      [class.ng-invalid]="myControl.invalid && myControl.dirty"
+      [class.ng-dirty]="myControl.invalid && myControl.dirty"
       (completeMethod)="onSearch($event)"
       (onSelect)="onProxySelect()"
       (onUnselect)="onChipRemove($any($event))"
@@ -31,7 +30,7 @@
       appendTo="body"
       [dropdown]="dropdown()"
       [showEmptyMessage]="false"
-      [showClear]="showClear() && chipsValue().length > 1"
+      [showClear]="showClear() && chipsValue().length > 0"
       [addOnBlur]="false"
       [separator]="separator()"
       (onClear)="clearSearch()"
@@ -60,6 +59,7 @@
                 [autoToggle]="autoToggle()"
                 [clearSelection]="clearTrigger()"
                 [preSelected]="currSelected()"
+                [disableRule]="gridDisableRule"
                 [disableSelected]="disableSelected()"
                 [query]="lastTypedQuery()"
                 [maxSelectedRows]="maxSelectedRows()"
@@ -77,6 +77,7 @@
                 [autoToggle]="autoToggle()"
                 [clearSelection]="clearTrigger()"
                 [preSelected]="$any(currSelected())"
+                [disableRule]="treeDisableRule"
                 [disableSelected]="disableSelected()"
                 [query]="lastTypedQuery()"
                 [maxSelectedRows]="maxSelectedRows()"
@@ -88,11 +89,13 @@
         }
       </ng-template>
     </p-autocomplete>
-    <label for="hds-common-search-input">{{ label() || placeholder() }}</label>
+    <label [for]="inputId()" (click)="focusInput()">{{
+      label() || placeholder()
+    }}</label>
 
     @if (collapsed()) {
       <span
-        class="absolute right-11 top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full pointer-events-auto cursor-default z-10 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200"
+        class="absolute right-[4.25rem] top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full pointer-events-auto cursor-default z-10 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200"
         [pTooltip]="overflowTooltip()"
         tooltipPosition="top"
       >{{ summaryLabel() }}</span>

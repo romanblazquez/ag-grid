@@ -11,8 +11,11 @@ import {
 import { TreeModule } from 'primeng/tree';
 import { TreeNode as PrimeTreeNode } from 'primeng/api';
 import { NgStyle } from '@angular/common';
-import { CommonSearchSelection } from '../../model/search-result.model';
-import { TreeFlatNode, TreeNode } from '../../model/tree-node.model';
+import {
+  CommonSearchSelection,
+  CommonSearchValue,
+} from '../../model/search-result.model';
+import { TreeNode } from '../../model/tree-node.model';
 import { DetailField } from '../../model/search-context.model';
 import { AutoToggle } from '../../model/auto-toggle.interface';
 import { HdsSelectedChipsListComponent } from '../hds-selected-chips-list/hds-selected-chips-list.component';
@@ -33,7 +36,7 @@ export class HdsTreeViewResultComponent {
   readonly fieldWidths = input<Record<string, number>>({});
   readonly autoToggle = input<AutoToggle | undefined>(undefined);
   readonly clearSelection = input<object | undefined>(undefined);
-  readonly disableRule = input<(node: TreeFlatNode) => boolean>(() => false);
+  readonly disableRule = input<(node: TreeNode) => boolean>(() => false);
   readonly disableSelected = input<boolean>(true);
   readonly preSelected = input<Record<string, unknown>[]>([]);
   readonly query = input<string>('');
@@ -117,17 +120,21 @@ export class HdsTreeViewResultComponent {
     const emitKey = this.emitField();
     const primaryField = this.detailFields()[0]?.name;
     const data: Record<string, unknown>[] = [];
-    const values: string[] = [];
+    const values: CommonSearchValue[] = [];
     const displayText: string[] = [];
 
     for (const n of arr) {
       if (n.children?.length) continue;
       const d = n.data as Record<string, unknown>;
-      const emitVal = d[emitKey] as string;
+      const rawEmitVal = d[emitKey];
+      if (typeof rawEmitVal !== 'string' && typeof rawEmitVal !== 'number') {
+        continue;
+      }
+      const emitVal = rawEmitVal;
       const primary = primaryField ? (d[primaryField] as string) : '';
       data.push(d);
       values.push(emitVal);
-      displayText.push(primary?.length > 0 ? primary : emitVal);
+      displayText.push(primary?.length > 0 ? primary : `${emitVal}`);
     }
 
     this.selected.emit({ data, values, displayText });
@@ -159,8 +166,10 @@ export class HdsTreeViewResultComponent {
       ) ?? [];
     const allChildrenDisabled =
       children.length > 0 && children.every((c) => c.selectable === false);
+    const ruleDisabled = this.disableRule()(node);
     const shouldDisable =
-      disable && (children.length > 0 ? allChildrenDisabled : isPreSelected);
+      ruleDisabled ||
+      (disable && (children.length > 0 ? allChildrenDisabled : isPreSelected));
     const primeNode: PrimeTreeNode = {
       label:
         (visibleItems.find((i) => i.name === this.displayField())

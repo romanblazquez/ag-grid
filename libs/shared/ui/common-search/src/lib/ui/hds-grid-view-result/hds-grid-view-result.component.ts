@@ -14,6 +14,7 @@ import { NgClass, NgStyle } from '@angular/common';
 import {
   AbstractData,
   CommonSearchSelection,
+  CommonSearchValue,
 } from '../../model/search-result.model';
 import { Context } from '../../model/search-context.model';
 import { AutoToggle } from '../../model/auto-toggle.interface';
@@ -154,8 +155,13 @@ export class HdsGridViewResultComponent {
     this.toggle(row, true);
   }
 
-  private extractValues(data: AbstractData[]): string[] {
-    return data.map((d) => d[this.viewContext().emitField] as string);
+  private extractValues(data: AbstractData[]): CommonSearchValue[] {
+    return data
+      .map((d) => d[this.viewContext().emitField])
+      .filter(
+        (value): value is CommonSearchValue =>
+          typeof value === 'string' || typeof value === 'number',
+      );
   }
 
   private extractDisplayText(data: AbstractData[]): string[] {
