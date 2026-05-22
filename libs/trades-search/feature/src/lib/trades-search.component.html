@@ -1,0 +1,147 @@
+<div class="flex flex-wrap items-start gap-3 p-3 w-full">
+  <!-- Filters region grows; wraps onto multiple lines when the row can't fit. -->
+  <div class="flex flex-wrap items-start gap-3 flex-1 min-w-0">
+    <!-- Group 1: Symbol + Fund. `basis-[22rem]` is the preferred width before wrap. -->
+    <div class="flex items-start gap-2 min-w-0 flex-1 basis-[22rem]">
+      <lib-hds-common-search
+        class="flex-1 basis-0 min-w-[11rem]"
+        (clearEvent)="removeSymbol()"
+        (emitSelection)="selectCompanySuggestion($event)"
+        [clearSelection]="clearSignal()"
+        [formGroup]="formGroup"
+        [maxSelection]="30"
+        [maxVisibleChips]="2"
+        [minLengthForInputValue]="1"
+        [searchContext]="symbolSearchContext"
+        [dropdown]="true"
+        [showClear]="true"
+        [panelMaxHeight]="'28rem'"
+        [maxSelectedRows]="3"
+      />
+
+      @if (fundSearchContext()) {
+        <lib-hds-common-search
+          class="flex-1 basis-0 min-w-[11rem]"
+          (clearEvent)="removeFunds()"
+          (emitSelection)="selectFundSuggestion($event)"
+          [clearSelection]="clearSignal()"
+          [formGroup]="formGroup"
+          [maxSelection]="30"
+          [maxVisibleChips]="1"
+          [searchContext]="fundSearchContext()!"
+          [dropdown]="true"
+          [showClear]="true"
+          [panelMaxHeight]="'28rem'"
+          [maxSelectedRows]="3"
+        />
+      }
+    </div>
+
+    <p-divider
+      layout="vertical"
+      class="hidden xl:!flex self-stretch !mx-0"
+    />
+
+    <!-- Group 2: Counterparties — three inputs, prefers ~34rem. -->
+    <div class="flex items-start gap-2 min-w-0 flex-1 basis-[34rem]">
+      <lib-hds-common-search
+        class="flex-1 basis-0 min-w-[11rem]"
+        (clearEvent)="removeIvTypes()"
+        (emitSelection)="selectInstrumentTypesSuggestion($event)"
+        [clearSelection]="clearSignal()"
+        [formGroup]="formGroup"
+        [maxSelection]="15"
+        [maxVisibleChips]="2"
+        [minLengthForInputValue]="0"
+        [searchContext]="instrumentTypeSearchContext"
+        [dropdown]="true"
+        [showClear]="true"
+        [panelMaxHeight]="'28rem'"
+        [maxSelectedRows]="3"
+      />
+
+      <lib-hds-common-search
+        class="flex-1 basis-0 min-w-[11rem]"
+        (clearEvent)="removeBrokers()"
+        (emitSelection)="selectBrokerSuggestion($event)"
+        [clearSelection]="clearSignal()"
+        [formGroup]="formGroup"
+        [maxSelection]="30"
+        [maxVisibleChips]="1"
+        [searchContext]="brokerSearchContext"
+        [dropdown]="true"
+        [showClear]="true"
+        [panelMaxHeight]="'28rem'"
+        [maxSelectedRows]="3"
+      />
+
+      <lib-hds-common-search
+        class="flex-1 basis-0 min-w-[11rem]"
+        (clearEvent)="removeTraders()"
+        (emitSelection)="selectTraderSuggestion($event)"
+        [clearSelection]="clearSignal()"
+        [formGroup]="formGroup"
+        [maxSelection]="15"
+        [maxVisibleChips]="2"
+        [minLengthForInputValue]="2"
+        [searchContext]="traderSearchContext"
+        [dropdown]="true"
+        [showClear]="true"
+        [panelMaxHeight]="'28rem'"
+        [maxSelectedRows]="3"
+      />
+    </div>
+
+    <p-divider
+      layout="vertical"
+      class="hidden xl:!flex self-stretch !mx-0"
+    />
+
+    <!-- Group 3: Date range (natural width, never shrinks). -->
+    <div class="flex items-start gap-2 shrink-0 pt-1">
+      <lib-date-picker
+        #datePicker
+        (dateRangeEvent)="onDateRangeEventTriggered($event)"
+        (errorMessage)="setDateError($event)"
+        [allowFutureDates]="true"
+      />
+    </div>
+  </div>
+
+  <!-- Action sidebar: aligns to the right, stretches to fill row height. -->
+  <aside
+    class="flex flex-row items-center gap-3 shrink-0 self-stretch pl-3 border-l border-surface-200 dark:border-surface-700"
+  >
+    <div class="flex items-center">
+      <p-checkbox
+        inputId="trades-include-cancelled"
+        [binary]="true"
+        (onChange)="onCancelledCheckboxClick({ checked: !!$event.checked })"
+        data-cy="cancelled-checkbox"
+      />
+      <label
+        for="trades-include-cancelled"
+        class="ml-2 text-sm cursor-pointer select-none whitespace-nowrap"
+      >
+        Include Cancelled
+      </label>
+    </div>
+
+    <p-button
+      label="Search"
+      severity="primary"
+      size="small"
+      styleClass="trades-search-button"
+      [disabled]="!isSearchActive() || areThereErrors()"
+      (onClick)="getTradingData($any($event))"
+    />
+    <p-button
+      label="Reset"
+      severity="secondary"
+      size="small"
+      [outlined]="true"
+      styleClass="trades-clear-button"
+      (onClick)="clearAll($any($event))"
+    />
+  </aside>
+</div>

@@ -1,0 +1,63 @@
+@if (resultCount() > 0) {
+  <div
+    class="hds-tree-column-header flex items-center gap-2 pl-12 pr-3 py-1.5 border-b text-sm shrink-0 sticky top-0 z-10 bg-surface-0 dark:bg-surface-950"
+  >
+    @for (field of visibleFields(); track field.name; let i = $index) {
+      <span
+        class="shrink-0 font-medium text-xs tracking-wide"
+        [ngStyle]="{ width: fieldWidths()[field.name] + '%' }"
+      >
+        {{ headerLabels()[i] }}
+      </span>
+    }
+  </div>
+}
+
+<lib-hds-selected-chips-list
+  [items]="$any(preSelected())"
+  [fields]="detailFields()"
+  [fieldWidths]="fieldWidths()"
+  [emitField]="emitField()"
+  [maxRows]="maxSelectedRows()"
+  (removed)="chipRemoved.emit($event)"
+/>
+
+@if (resultCount() > 0) {
+  <div
+    class="hds-results-divider border-t border-b border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs text-surface-600 dark:text-surface-300 shrink-0 sticky top-6 z-10 bg-surface-0 dark:bg-surface-950"
+  >
+    Showing {{ formattedResultCount() }} matching result{{
+      resultCount() === 1 ? '' : 's'
+    }}
+    @if (query()) {
+      <span> for "{{ query() }}"</span>
+    }
+  </div>
+}
+
+<p-tree
+  [value]="treeNodes()"
+  selectionMode="checkbox"
+  [propagateSelectionDown]="true"
+  [propagateSelectionUp]="true"
+  [(selection)]="selectedNodesValue"
+  (selectionChange)="onSelectionChange($event)"
+  class="hds-tree w-full border-0 p-0"
+>
+  <ng-template let-node pTemplate="default">
+    @if (node.children?.length) {
+      <span class="text-sm truncate">{{ node.label }}</span>
+    } @else {
+      <div class="flex w-full min-w-0 text-sm">
+        @for (field of visibleFields(); track field.name) {
+          <span
+            class="truncate"
+            [ngStyle]="{ width: fieldWidths()[field.name] + '%' }"
+          >
+            {{ node.data?.[field.name] }}
+          </span>
+        }
+      </div>
+    }
+  </ng-template>
+</p-tree>

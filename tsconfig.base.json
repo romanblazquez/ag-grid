@@ -21,8 +21,20 @@
       "@trade-platform/shared/ui-components": [
         "libs/shared/ui-components/src/index.ts"
       ],
+      "@trade-platform/shared/ui/common-search": [
+        "libs/shared/ui/common-search/src/index.ts"
+      ],
+      "@trade-platform/shared/ui/date-picker": [
+        "libs/shared/ui/date-picker/src/index.ts"
+      ],
       "@trade-platform/shell/feature": ["libs/shell/feature/src/index.ts"],
-      "@trade-platform/trade-grid": ["libs/trade-grid/src/index.ts"]
+      "@trade-platform/trade-grid": ["libs/trade-grid/src/index.ts"],
+      "@trade-platform/trades-search/data-access": [
+        "libs/trades-search/data-access/src/index.ts"
+      ],
+      "@trade-platform/trades-search/feature": [
+        "libs/trades-search/feature/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

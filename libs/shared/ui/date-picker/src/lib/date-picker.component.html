@@ -1,0 +1,31 @@
+<div class="flex items-center gap-2 shrink-0">
+  <p-select
+    [options]="presetOptions"
+    optionLabel="label"
+    optionValue="type"
+    [(ngModel)]="selectedPreset"
+    (ngModelChange)="onPresetChange($event)"
+    styleClass="hds-date-preset"
+    [style]="{ minWidth: '8.5rem' }"
+    appendTo="body"
+  />
+
+  <p-floatlabel variant="over">
+    <p-datepicker
+      inputId="hds-date-range"
+      [(ngModel)]="range"
+      selectionMode="range"
+      [showIcon]="true"
+      iconDisplay="input"
+      [readonlyInput]="false"
+      [showButtonBar]="true"
+      dateFormat="mm/dd/yy"
+      appendTo="body"
+      [maxDate]="allowFutureDates() ? null : today"
+      (onSelect)="onCalendarChange()"
+      (onClear)="onClear()"
+      styleClass="hds-date-range"
+    />
+    <label for="hds-date-range">Date Range</label>
+  </p-floatlabel>
+</div>

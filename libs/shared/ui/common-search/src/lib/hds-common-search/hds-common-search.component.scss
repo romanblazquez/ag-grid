@@ -1,0 +1,125 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* Layout of the multi-select autocomplete + dropdown chevron.
+   PrimeNG renders the dropdown button as a sibling of the chip container,
+   so we make `.p-autocomplete` a flex row and seam the two halves together. */
+.hds-search-autocomplete {
+  width: 100%;
+  display: block;
+
+  ::ng-deep {
+    .p-autocomplete {
+      width: 100%;
+      display: flex;
+      align-items: stretch;
+      min-width: 0; // allow shrinking inside flex parents
+    }
+
+    // Chip container — grows to fill, never overflows the row
+    .p-autocomplete-multiple,
+    .p-autocomplete-input-multiple {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+      min-height: 2.5rem;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .p-autocomplete-input-multiple {
+      flex-wrap: nowrap;
+      overflow: hidden;
+      align-items: center;
+      padding-inline: 0.5rem;
+    }
+
+    // Chip-item li — keep on one line, ellipsize gracefully
+    .p-autocomplete-chip-item {
+      max-width: 100%;
+      min-width: 0;
+
+      .p-chip,
+      .p-autocomplete-chip {
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    // Native typing token — never push the chevron off-screen
+    .p-autocomplete-input-token {
+      flex: 1 1 auto;
+      min-width: 4rem;
+
+      input {
+        min-width: 4rem;
+        width: 100%;
+      }
+    }
+
+    // Chevron / dropdown button — flush right, square, seamed to the input
+    .p-autocomplete-dropdown {
+      flex: 0 0 auto;
+      width: 2.5rem;
+      align-self: stretch;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-left: 0;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      .p-button-icon,
+      .p-icon {
+        font-size: 0.85rem;
+        line-height: 1;
+      }
+    }
+
+    // Clear (X) button — keep above the chevron, smaller
+    .p-autocomplete-clear-icon {
+      right: 2.75rem;
+    }
+  }
+}
+
+/* Single "N Items" summary chip sits to the LEFT of the chevron without
+   overlapping it (chevron is 2.5rem wide → offset 2.75rem keeps a 0.25rem gap). */
+.hds-summary-chip {
+  position: absolute;
+  right: 2.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 999px;
+  background: var(--p-primary-100, #e0e7ff);
+  color: var(--p-primary-700, #4338ca);
+  pointer-events: auto;
+  cursor: default;
+  z-index: 1;
+}
+
+:host-context(.app-dark) .hds-summary-chip {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+}
+
+::ng-deep .hds-ac-error {
+  margin-top: 0.25rem;
+  display: block;
+  font-size: 0.75rem;
+}
+
+::ng-deep .hds-common-search__panel {
+  min-width: 280px;
+}

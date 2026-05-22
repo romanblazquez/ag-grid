@@ -1,0 +1,6 @@
+/* Layout is Tailwind-first (see trades-search.component.html). This file
+   only houses styles Tailwind utilities can't reach — none currently. */
+:host {
+  display: block;
+  width: 100%;
+}

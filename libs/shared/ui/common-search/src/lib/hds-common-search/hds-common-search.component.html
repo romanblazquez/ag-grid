@@ -1,0 +1,109 @@
+<div
+  class="block relative w-full py-1"
+  [ngClass]="[
+    disabled() ? 'opacity-60 pointer-events-none' : '',
+    containerClass()
+  ]"
+  [style.min-width]="minWidth() || null"
+  [style.max-width]="maxWidth() || null"
+>
+  <p-floatlabel variant="on">
+    <p-autocomplete
+      #commonSearch
+      inputId="hds-common-search-input"
+      [formControl]="myControl"
+      [multiple]="true"
+      [suggestions]="suggestions"
+      [minLength]="minLengthForInputValue()"
+      [panelStyle]="panelStyle()"
+      [panelStyleClass]="resolvedPanelClass()"
+      [class]="
+        'hds-search-autocomplete ' +
+        (myControl.invalid && myControl.dirty ? 'ng-invalid ng-dirty' : '')
+      "
+      (completeMethod)="onSearch($event)"
+      (onSelect)="onProxySelect()"
+      (onUnselect)="onChipRemove($any($event))"
+      (onFocus)="onFocusIn()"
+      (onBlur)="onFocusOut($any($event))"
+      (keydown)="onInputKeyDown($event)"
+      (paste)="onInputPaste($event)"
+      appendTo="body"
+      [dropdown]="dropdown()"
+      [showEmptyMessage]="false"
+      [showClear]="showClear() && chipsValue().length > 1"
+      [addOnBlur]="false"
+      [separator]="separator()"
+      (onClear)="clearSearch()"
+      (onDropdownClick)="onDropdownButtonClick()"
+      (onHide)="onPanelHide()"
+    >
+      <ng-template #item>
+        <span class="hidden"></span>
+      </ng-template>
+
+      <ng-template let-value #selecteditem>
+        {{ value }}
+      </ng-template>
+
+      <ng-template #footer>
+        @if (panelVisible()) {
+          <div
+            class="overflow-y-auto overflow-x-hidden"
+            [style.max-height]="panelMaxHeight()"
+            (mousedown)="onPanelMouseDown($event)"
+          >
+            @if (!isTreeView()) {
+              <lib-hds-grid-view-result
+                [viewContext]="serviceContext()!"
+                [searchResults]="searchResults()"
+                [autoToggle]="autoToggle()"
+                [clearSelection]="clearTrigger()"
+                [preSelected]="currSelected()"
+                [disableSelected]="disableSelected()"
+                [query]="lastTypedQuery()"
+                [maxSelectedRows]="maxSelectedRows()"
+                (selected)="onSelected($event)"
+                (chipRemoved)="onSelectedChipUnchecked($event)"
+              />
+            } @else {
+              <lib-hds-tree-view-result
+                [searchResults]="$any(searchResults())"
+                [detailFields]="serviceContext()!.detailFields"
+                [displayField]="serviceContext()!.detailFields[0]?.name ?? ''"
+                [emitField]="serviceContext()!.emitField"
+                [headers]="serviceContext()!.detailHeaders"
+                [fieldWidths]="serviceContext()!.fieldWidths"
+                [autoToggle]="autoToggle()"
+                [clearSelection]="clearTrigger()"
+                [preSelected]="$any(currSelected())"
+                [disableSelected]="disableSelected()"
+                [query]="lastTypedQuery()"
+                [maxSelectedRows]="maxSelectedRows()"
+                (selected)="onSelected($event)"
+                (chipRemoved)="onSelectedChipUnchecked($event)"
+              />
+            }
+          </div>
+        }
+      </ng-template>
+    </p-autocomplete>
+    <label for="hds-common-search-input">{{ label() || placeholder() }}</label>
+
+    @if (collapsed()) {
+      <span
+        class="absolute right-11 top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full pointer-events-auto cursor-default z-10 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200"
+        [pTooltip]="overflowTooltip()"
+        tooltipPosition="top"
+      >{{ summaryLabel() }}</span>
+    }
+  </p-floatlabel>
+
+  @if (errorMessage()) {
+    <p-message
+      severity="error"
+      [text]="errorMessage()!"
+      styleClass="mt-1 block text-xs"
+    />
+  }
+</div>

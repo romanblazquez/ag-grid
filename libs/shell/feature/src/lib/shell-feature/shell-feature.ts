@@ -4,10 +4,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { TradeGrid, TradeData, PersonService, CancellationRequest } from '@trade-platform/trade-grid';
 import { TradeDataService } from '@trade-platform/shared/data-access';
 import { StatsCard, ThemeSwitcher } from '@trade-platform/shared/ui-components';
+import { TradesSearchComponent } from '@trade-platform/trades-search/feature';
+import { TradesSearchFacadeService } from '@trade-platform/trades-search/data-access';
 
 @Component({
   selector: 'lib-shell-feature',
-  imports: [CommonModule, TradeGrid, StatsCard, ThemeSwitcher],
+  imports: [CommonModule, TradeGrid, StatsCard, ThemeSwitcher, TradesSearchComponent],
   templateUrl: './shell-feature.html',
   styleUrl: './shell-feature.css',
 })
@@ -20,6 +22,7 @@ export class ShellFeature implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private tradeDataService = inject(TradeDataService);
+  private tradesSearchFacade = inject(TradesSearchFacadeService);
 
   // Enhanced person service with more comprehensive data
   personService: PersonService = {
@@ -48,6 +51,12 @@ export class ShellFeature implements OnInit, OnDestroy {
       .subscribe((trades) => {
         this.tradeData = trades;
         this.updateStats(trades);
+      });
+
+    this.tradesSearchFacade.searches$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result) => {
+        console.log('[trades-search] dispatched', result.view, result.request);
       });
   }
 

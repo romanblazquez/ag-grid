@@ -1,5 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
+// Angular Material Theme
+@use '@angular/material' as mat;
+
 /* PrimeNG + Tailwind layer order. PrimeNG sits between Tailwind base and
    utilities so utilities (e.g. `bg-primary-50`) win over component defaults. */
 @layer tailwind-base, primeng, tailwind-utilities;
@@ -16,8 +19,23 @@
 /* PrimeIcons font */
 @import 'primeicons/primeicons.css';
 
-// Angular Material Theme
-@use '@angular/material' as mat;
+/* hds-common-search megamenu overlay tweaks. The autocomplete panel is
+   `appendTo="body"` so component-scoped SCSS cannot reach it — these rules
+   are scoped via the `hds-megamenu-overlay` class on the panel. */
+.hds-megamenu-overlay {
+  .p-autocomplete-list-container,
+  .p-autocomplete-list {
+    padding: 0;
+    margin: 0;
+  }
+
+  .p-autocomplete-empty-message {
+    padding: 0;
+    cursor: default;
+    background: transparent;
+    list-style: none;
+  }
+}
 
 // Include the common styles for Angular Material
 @include mat.core();
