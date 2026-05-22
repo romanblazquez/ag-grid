@@ -7,7 +7,10 @@
   [style.min-width]="minWidth() || null"
   [style.max-width]="maxWidth() || null"
 >
-  <p-floatlabel variant="on">
+  <p-floatlabel
+    variant="on"
+    [class.hds-common-search__float--active]="labelRaised()"
+  >
     <p-autocomplete
       #commonSearch
       [inputId]="inputId()"
@@ -17,7 +20,9 @@
       [minLength]="minLengthForInputValue()"
       [panelStyle]="panelStyle()"
       [panelStyleClass]="resolvedPanelClass()"
+      [size]="size()"
       styleClass="hds-search-autocomplete"
+      [class.hds-search-autocomplete--collapsed]="collapsed()"
       [class.ng-invalid]="myControl.invalid && myControl.dirty"
       [class.ng-dirty]="myControl.invalid && myControl.dirty"
       (completeMethod)="onSearch($event)"
@@ -34,7 +39,7 @@
       [addOnBlur]="false"
       [separator]="separator()"
       (onClear)="clearSearch()"
-      (onDropdownClick)="onDropdownButtonClick()"
+      (onDropdownClick)="onDropdownButtonClick($event)"
       (onHide)="onPanelHide()"
     >
       <ng-template #item>

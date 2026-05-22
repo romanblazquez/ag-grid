@@ -34,7 +34,7 @@
       flex: 1 1 auto;
       width: auto;
       min-width: 0;
-      min-height: 2.5rem;
+      min-height: 2rem;
       max-width: calc(100% - 2.5rem);
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
@@ -63,8 +63,8 @@
       }
     }
 
-    // Native typing token — never push the chevron off-screen
-    .p-autocomplete-input-token {
+    // Native typing chip — never push the chevron off-screen
+    .p-autocomplete-input-chip {
       flex: 1 1 auto;
       min-width: 4rem;
 
@@ -77,8 +77,8 @@
     // Chevron / dropdown button — flush right, square, seamed to the input
     .p-autocomplete-dropdown {
       flex: 0 0 auto;
-      width: 2.5rem;
-      min-width: 2.5rem;
+      width: 2.25rem;
+      min-width: 2.25rem;
       margin-left: auto;
       align-self: stretch;
       border-top-left-radius: 0;
@@ -88,7 +88,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 2.5rem;
+      min-height: 2rem;
 
       .p-button-icon,
       .p-icon {
@@ -101,6 +101,24 @@
     .p-autocomplete-clear-icon {
       right: 2.75rem;
     }
+  }
+}
+
+:host ::ng-deep .hds-search-autocomplete--collapsed {
+  .p-autocomplete-chip-item {
+    display: none;
+  }
+}
+
+.hds-common-search__float--active {
+  label {
+    top: 0;
+    transform: translateY(-50%);
+    border-radius: var(--p-floatlabel-on-border-radius, 0.25rem);
+    background: var(--p-floatlabel-on-active-background, var(--p-surface-0));
+    padding: var(--p-floatlabel-on-active-padding, 0 0.25rem);
+    font-size: var(--p-floatlabel-active-font-size, 0.75rem);
+    font-weight: var(--p-floatlabel-active-font-weight, 500);
   }
 }
 

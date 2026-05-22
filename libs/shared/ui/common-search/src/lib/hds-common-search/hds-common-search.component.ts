@@ -1,6 +1,5 @@
 import {
   afterNextRender,
-  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -107,6 +106,7 @@ export class HdsCommonSearchComponent {
   readonly label = input<string>('');
   readonly dropdown = input<boolean>(false);
   readonly showClear = input<boolean>(true);
+  readonly size = input<'small' | 'large' | undefined>('small');
   readonly maxVisibleChips = input<number>(Infinity);
   readonly separator = input<string>(',');
   readonly disableSelected = input<boolean>(true);
@@ -185,6 +185,13 @@ export class HdsCommonSearchComponent {
     this.collapsed() ? this.chipsValue().join(', ') : '',
   );
 
+  readonly labelRaised = computed(
+    () =>
+      this.focused() ||
+      this.chipsValue().length > 0 ||
+      this.lastTypedQuery().length > 0,
+  );
+
   readonly gridDisableRule = (row: MultiselectRow): boolean =>
     this.searchContext().disableRules?.grid?.(row) ?? false;
 
@@ -241,8 +248,6 @@ export class HdsCommonSearchComponent {
 
   private formGroupRegistered = false;
   private focusOutTimer: ReturnType<typeof setTimeout> | null = null;
-  private lastCollapsedState = false;
-  private lastChipCount = 0;
 
   private emitAutoDeselect(value: string): void {
     if (!value) return;
@@ -290,19 +295,6 @@ export class HdsCommonSearchComponent {
       if (trigger && !this.disabled()) {
         this.searchQuery.set(trigger);
         this.onFocusOut();
-      }
-    });
-
-    afterRenderEffect(() => {
-      const chips = this.chipsValue();
-      const collapsed = this.collapsed();
-      const chipCount = chips.length;
-      const stateChanged = collapsed !== this.lastCollapsedState;
-      const chipsChanged = chipCount !== this.lastChipCount;
-      this.lastCollapsedState = collapsed;
-      this.lastChipCount = chipCount;
-      if (stateChanged || (collapsed && chipsChanged)) {
-        this.applyChipVisibility(collapsed);
       }
     });
 
@@ -361,6 +353,7 @@ export class HdsCommonSearchComponent {
         const data = results as AbstractData[];
         this.searchResults.set(data);
         this.panelVisible.set(true);
+        this.stopAutoCompleteLoading();
         queueMicrotask(() => {
           const query = this.searchQuery();
           const el = this.inputEl();
@@ -402,23 +395,13 @@ export class HdsCommonSearchComponent {
     });
   }
 
-  private applyChipVisibility(collapsed: boolean): void {
-    const ac = this.autoComplete() as unknown as
-      | { el?: ElementRef }
-      | undefined;
-    const host = ac?.el?.nativeElement as HTMLElement | undefined;
-    if (!host) return;
-    const chips = host.querySelectorAll<HTMLElement>(
-      '.p-autocomplete-chip-item',
-    );
-    chips.forEach((chip) => {
-      chip.style.display = collapsed ? 'none' : '';
-    });
-  }
-
   onSearch(event: AutoCompleteCompleteEvent): void {
     const query = event.query ?? '';
     if (query.length > 0) this.lastTypedQuery.set(query);
+    if (query.length === 0 && this.dropdown()) {
+      this.openInitialPanel();
+      return;
+    }
     if (query.length < this.minLengthForInputValue()) return;
     this.searchQuery.set(query);
   }
@@ -430,26 +413,8 @@ export class HdsCommonSearchComponent {
     const ctx = this.serviceContext();
     if (!ctx) return;
 
-    if (this.searchResults().length > 0) {
-      this.panelVisible.set(true);
-      this.openPanel();
-      return;
-    }
-
-    if (this.searchQuery() === '') {
-      this.dataFacadeService
-        .getInitialData(ctx, this.searchContext().searchType)
-        .pipe(
-          filter((d): d is AbstractData[] => Array.isArray(d) && d.length > 0),
-          take(1),
-          takeUntilDestroyed(this.destroyRef),
-        )
-        .subscribe((d: AbstractData[]) => {
-          this.searchResults.set(d);
-          this.panelVisible.set(true);
-          this.openPanel();
-        });
-    }
+    if (this.searchResults().length > 0) this.showPanel();
+    else if (this.searchQuery() === '') this.openInitialPanel();
   }
 
   focusInput(): void {
@@ -487,34 +452,59 @@ export class HdsCommonSearchComponent {
     }, 1000);
   }
 
-  onDropdownButtonClick(): void {
+  onDropdownButtonClick(event?: { query?: string | null }): void {
     if (this.focusOutTimer !== null) {
       clearTimeout(this.focusOutTimer);
       this.focusOutTimer = null;
     }
+
+    // PrimeNG emits `query: undefined` for the close half of the dropdown
+    // toggle. Keep that click as a pure close; the next click will emit an
+    // empty/current query and reopen through `onSearch`/`openInitialPanel`.
+    if (event && event.query === undefined) return;
+
+    this.isFocusedOut.set(false);
+    this.focused.set(true);
+    if (this.searchResults().length > 0) this.showPanel();
+    else if ((event?.query ?? '') === '') this.openInitialPanel();
+  }
+
+  private showPanel(): void {
+    this.panelVisible.set(true);
+    this.openPanel();
+  }
+
+  private openInitialPanel(): void {
+    const ctx = this.serviceContext();
+    if (!ctx || this.disabled()) return;
+
+    this.isFocusedOut.set(false);
+    this.focused.set(true);
+
+    if (this.searchResults().length > 0) {
+      this.showPanel();
+      return;
+    }
+
+    this.dataFacadeService
+      .getInitialData(ctx, this.searchContext().searchType)
+      .pipe(
+        filter((d): d is AbstractData[] => Array.isArray(d) && d.length > 0),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((d: AbstractData[]) => {
+        this.searchResults.set(d);
+        this.stopAutoCompleteLoading();
+        this.showPanel();
+      });
+  }
+
+  private stopAutoCompleteLoading(): void {
     const ac = this.autoComplete() as unknown as
       | { loading?: boolean }
       | undefined;
-    if (ac?.loading) {
-      this.isFocusedOut.set(false);
-      this.focused.set(true);
-      this.panelVisible.set(true);
-      const ctx = this.serviceContext();
-      if (
-        ctx &&
-        this.searchResults().length === 0 &&
-        this.searchQuery() === ''
-      ) {
-        this.dataFacadeService
-          .getInitialData(ctx, this.searchContext().searchType)
-          .pipe(
-            filter((d): d is AbstractData[] => Array.isArray(d) && d.length > 0),
-            take(1),
-            takeUntilDestroyed(this.destroyRef),
-          )
-          .subscribe((d: AbstractData[]) => this.searchResults.set(d));
-      }
-    }
+    if (ac?.loading) ac.loading = false;
   }
 
   onPanelHide(): void {
@@ -550,13 +540,19 @@ export class HdsCommonSearchComponent {
 
     const isComma = event.key === ',';
     const isTab = event.key === 'Tab' && !event.shiftKey;
-    const isEnter = event.key === 'Enter' && !this.panelVisible();
+    const isEnter = event.key === 'Enter';
     if (!isComma && !isTab && !isEnter) return;
 
     const text = this.readInputText();
     if (!text) return;
 
-    if (isComma || isEnter) event.preventDefault();
+    if (isEnter) {
+      event.preventDefault();
+      this.submitInputQuery(text);
+      return;
+    }
+
+    if (isComma) event.preventDefault();
 
     const prev = this.myControl.value ?? [];
     if (
@@ -569,6 +565,23 @@ export class HdsCommonSearchComponent {
 
     this.clearInputBox();
     this.resolveAndAddTokens([text], prev);
+  }
+
+  private submitInputQuery(query: string): void {
+    this.lastTypedQuery.set(query);
+    if (query.length < this.minLengthForInputValue()) return;
+
+    this.isFocusedOut.set(false);
+    this.focused.set(true);
+    this.panelVisible.set(true);
+    this.openPanel();
+
+    if (this.searchQuery() === query) {
+      if (this.searchResults().length > 0) this.showPanel();
+      return;
+    }
+
+    this.searchQuery.set(query);
   }
 
   onInputPaste(event: ClipboardEvent): void {
