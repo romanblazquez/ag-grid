@@ -304,7 +304,12 @@ export class HdsCommonSearchComponent {
       .pipe(
         distinctUntilChanged(),
         debounceTime(300),
-        filter((v) => v.length >= this.minLengthForInputValue()),
+        // Always require a non-empty query — the empty-input path is owned
+        // by `openInitialPanel` (chevron / focus). Without this, callers
+        // that pass `minLengthForInputValue=0` would let toObservable's
+        // initial '' emission through on mount, eagerly auto-opening the
+        // panel and making the next chevron click read as a close.
+        filter((v) => v.length > 0 && v.length >= this.minLengthForInputValue()),
         switchMap((query) => {
           const ctx = this.serviceContext();
           if (!ctx) return of([]);

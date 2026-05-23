@@ -157,3 +157,12 @@
 ::ng-deep .hds-common-search__panel {
   min-width: 280px;
 }
+
+/* PrimeNG always renders `.p-autocomplete-list-container` for the suggestion
+   list, but our megamenu lives in the `#footer` template and the list itself
+   only holds a hidden sentinel `<li>` (used to keep PrimeNG's overlay open).
+   The container's padding/min-height still produces a ~1px line, sometimes
+   visible during open/close transitions — drop it entirely. */
+::ng-deep .hds-megamenu-overlay .p-autocomplete-list-container {
+  display: none;
+}
