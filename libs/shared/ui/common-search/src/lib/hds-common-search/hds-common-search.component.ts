@@ -1049,32 +1049,38 @@ export class HdsCommonSearchComponent {
     }
 
     const visibleTexts = this.visibleTextsSet();
-    const preserved = prev.filter((t) => !visibleTexts.has(t));
-    const seen = new Set<string>();
+    const selectionTextSet = new Set(selection.displayText);
+    const prevSet = new Set(prev);
+
+    // Order chips by selection time: kept items hold their original position
+    // (so existing chips don't shuffle when a new pick lands), and newly
+    // checked items append at the end in the order the grid/tree emitted
+    // them — which equals click order when the user is selecting one at a
+    // time.
     const mergedDisplay: string[] = [];
-    for (const t of [...preserved, ...selection.displayText]) {
-      if (!seen.has(t)) {
-        seen.add(t);
+    for (const t of prev) {
+      if (!visibleTexts.has(t) || selectionTextSet.has(t)) {
         mergedDisplay.push(t);
       }
     }
+    for (const t of selection.displayText) {
+      if (!prevSet.has(t)) mergedDisplay.push(t);
+    }
 
-    const visibleValues = this.visibleValueSet();
-    const prevDisplaySet = new Set(prev);
-    const normalizedCurrentSelected = this.currSelected().filter((d) =>
-      prevDisplaySet.has(this.resolveDisplayText(d)),
-    );
-    const preservedData = normalizedCurrentSelected.filter(
-      (d) => !visibleValues.has(this.resultIdentity(d)),
-    );
-    const dataSeen = new Set<string>();
+    const prevDataByDisplay = new Map<string, AbstractData>();
+    for (const d of this.currSelected()) {
+      prevDataByDisplay.set(this.resolveDisplayText(d), d);
+    }
     const mergedData: AbstractData[] = [];
-    for (const d of [...preservedData, ...selection.data]) {
-      const key = this.resultIdentity(d) || JSON.stringify(d);
-      if (!dataSeen.has(key)) {
-        dataSeen.add(key);
-        mergedData.push(d);
+    for (const t of prev) {
+      if (!visibleTexts.has(t) || selectionTextSet.has(t)) {
+        const d = prevDataByDisplay.get(t);
+        if (d) mergedData.push(d);
       }
+    }
+    for (const d of selection.data) {
+      const text = this.resolveDisplayText(d);
+      if (!prevSet.has(text)) mergedData.push(d);
     }
 
     this.trackFilterModified(prev, mergedDisplay);
