@@ -3,10 +3,12 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   input,
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FormsModule } from '@angular/forms';
@@ -50,8 +52,13 @@ export class HdsGridViewResultComponent {
 
   readonly selected = output<CommonSearchSelection>();
   readonly chipRemoved = output<string>();
+  readonly escape = output<void>();
+  readonly tabOut = output<boolean>();
 
   readonly rows = signal<MultiselectRow[]>([]);
+
+  private readonly rowsContainer =
+    viewChild<ElementRef<HTMLElement>>('rowsContainer');
 
   readonly visibleFields = computed(() =>
     this.viewContext().detailFields.filter((f) => f.visible),
@@ -135,6 +142,58 @@ export class HdsGridViewResultComponent {
 
   getCell(data: AbstractData, fieldName: string): string {
     return (data[fieldName] as string) ?? '';
+  }
+
+  onRowKeyDown(event: KeyboardEvent, row: MultiselectRow, index: number): void {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.focusRowAt(index + 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.focusRowAt(index - 1);
+        break;
+      case ' ':
+      case 'Spacebar':
+        event.preventDefault();
+        if (this.viewContext().multiselect) this.toggle(row);
+        else this.toggleSingle(row);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.viewContext().multiselect) this.toggle(row);
+        else this.toggleSingle(row);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        this.escape.emit();
+        break;
+      case 'Tab':
+        // Rows are tabindex=-1 so Tab from here lands in unpredictable
+        // territory (the overlay is body-appended). Forward to the parent
+        // and let it focus the next form control.
+        event.preventDefault();
+        this.tabOut.emit(event.shiftKey);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /** Programmatic entry point used by the parent when the user presses
+   * ArrowDown from the input — moves focus to the first selectable row. */
+  focusFirstRow(): void {
+    this.focusRowAt(0);
+  }
+
+  private focusRowAt(target: number): void {
+    const host = this.rowsContainer()?.nativeElement;
+    if (!host) return;
+    const rows = host.querySelectorAll<HTMLElement>('[data-hds-row]');
+    if (rows.length === 0) return;
+    const clamped = Math.max(0, Math.min(rows.length - 1, target));
+    rows[clamped]?.focus();
   }
 
   private findAndToggle(name: string, selectOnly: boolean): void {

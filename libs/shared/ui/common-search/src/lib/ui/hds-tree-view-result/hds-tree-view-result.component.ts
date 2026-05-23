@@ -3,10 +3,12 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   input,
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { TreeModule } from 'primeng/tree';
 import { TreeNode as PrimeTreeNode } from 'primeng/api';
@@ -44,9 +46,15 @@ export class HdsTreeViewResultComponent {
 
   readonly selected = output<CommonSearchSelection>();
   readonly chipRemoved = output<string>();
+  readonly escape = output<void>();
+  readonly tabOut = output<boolean>();
 
   readonly treeNodes = signal<PrimeTreeNode[]>([]);
   readonly selectedNodes = signal<PrimeTreeNode[]>([]);
+
+  private readonly treeHost = viewChild('treeHost', {
+    read: ElementRef,
+  });
 
   get selectedNodesValue(): PrimeTreeNode[] {
     return this.selectedNodes();
@@ -68,6 +76,32 @@ export class HdsTreeViewResultComponent {
   );
 
   private readonly valueToNodeMap = new Map<string, PrimeTreeNode>();
+
+  /** Programmatic entry point used by the parent when the user presses
+   * ArrowDown from the input — moves focus to the first tree row, after
+   * which PrimeNG's `p-tree` handles arrows / space / enter natively. */
+  focusFirstNode(): void {
+    const host = this.treeHost()?.nativeElement as HTMLElement | undefined;
+    if (!host) return;
+    const first = host.querySelector<HTMLElement>('[role="treeitem"]');
+    first?.focus();
+  }
+
+  onTreeKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.escape.emit();
+      return;
+    }
+    if (event.key === 'Tab') {
+      // PrimeNG's tree-node keydown lets Tab fall through to the browser,
+      // which would either trap focus inside the body-appended overlay or
+      // jump somewhere unrelated. Hijack here and let the parent decide
+      // which form control to focus next.
+      event.preventDefault();
+      this.tabOut.emit(event.shiftKey);
+    }
+  }
 
   constructor() {
     effect(() => {

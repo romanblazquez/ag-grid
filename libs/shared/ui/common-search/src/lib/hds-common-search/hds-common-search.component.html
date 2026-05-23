@@ -32,6 +32,7 @@
         (onFocus)="onFocusIn()"
         (onBlur)="onFocusOut($any($event))"
         (keydown)="onInputKeyDown($event)"
+        (onInputKeydown)="onInputKeydownEarly($event)"
         (paste)="onInputPaste($event)"
         appendTo="body"
         [dropdown]="false"
@@ -59,6 +60,7 @@
             >
               @if (!isTreeView()) {
                 <lib-hds-grid-view-result
+                  #gridResultRef
                   [viewContext]="serviceContext()!"
                   [searchResults]="searchResults()"
                   [autoToggle]="autoToggle()"
@@ -70,9 +72,12 @@
                   [maxSelectedRows]="maxSelectedRows()"
                   (selected)="onSelected($event)"
                   (chipRemoved)="onSelectedChipUnchecked($event)"
+                  (escape)="onPanelEscape()"
+                  (tabOut)="onPanelTabOut($event)"
                 />
               } @else {
                 <lib-hds-tree-view-result
+                  #treeResultRef
                   [searchResults]="$any(searchResults())"
                   [detailFields]="serviceContext()!.detailFields"
                   [displayField]="serviceContext()!.detailFields[0]?.name ?? ''"
@@ -88,6 +93,8 @@
                   [maxSelectedRows]="maxSelectedRows()"
                   (selected)="onSelected($event)"
                   (chipRemoved)="onSelectedChipUnchecked($event)"
+                  (escape)="onPanelEscape()"
+                  (tabOut)="onPanelTabOut($event)"
                 />
               }
             </div>

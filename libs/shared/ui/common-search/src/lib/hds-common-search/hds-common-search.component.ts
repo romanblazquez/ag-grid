@@ -241,6 +241,10 @@ export class HdsCommonSearchComponent {
   private readonly searchQuery = signal<string>('');
 
   private readonly autoComplete = viewChild<AutoComplete>('commonSearch');
+  private readonly gridResult =
+    viewChild<HdsGridViewResultComponent>('gridResultRef');
+  private readonly treeResult =
+    viewChild<HdsTreeViewResultComponent>('treeResultRef');
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly dataFacadeService = inject(DataAccessFacadeService);
@@ -916,6 +920,71 @@ export class HdsCommonSearchComponent {
     const first = results[0];
     const display = this.resolveDisplayText(first);
     return display ? { display, data: first } : null;
+  }
+
+  /** PrimeNG's `(keydown)` listener on the inner input calls
+   * `event.stopPropagation()` for ArrowDown/Up/Left/Right/Escape, so our
+   * own `(keydown)` on `<p-autocomplete>` never sees them. PrimeNG emits the
+   * raw event via the `onInputKeydown` output *before* its switch, which is
+   * how we intercept those keys here. */
+  onInputKeydownEarly(event: KeyboardEvent): void {
+    if (!this.panelVisible()) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closePanel();
+      return;
+    }
+    if (event.key === 'ArrowDown' && this.focusPanelStart()) {
+      event.preventDefault();
+    }
+  }
+
+  private focusPanelStart(): boolean {
+    if (this.isTreeView()) {
+      const tree = this.treeResult();
+      if (tree) {
+        tree.focusFirstNode();
+        return true;
+      }
+      return false;
+    }
+    const grid = this.gridResult();
+    if (grid) {
+      grid.focusFirstRow();
+      return true;
+    }
+    return false;
+  }
+
+  onPanelEscape(): void {
+    this.closePanel();
+    this.focusInput();
+  }
+
+  /** Tab pressed inside the megamenu panel — pop out of the body-appended
+   * overlay and move focus to the next (or previous) form control as if
+   * Tab had been pressed on the input itself. */
+  onPanelTabOut(shiftKey: boolean): void {
+    const input = this.inputEl();
+    this.closePanel();
+    if (!input) return;
+    // Defer one microtask so the close-side signal updates settle before we
+    // shift focus.
+    queueMicrotask(() => {
+      const tabbable = this.documentTabbable();
+      const idx = tabbable.indexOf(input);
+      if (idx === -1) return;
+      const next = shiftKey ? tabbable[idx - 1] : tabbable[idx + 1];
+      next?.focus();
+    });
+  }
+
+  private documentTabbable(): HTMLElement[] {
+    const selector =
+      'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.from(
+      document.querySelectorAll<HTMLElement>(selector),
+    ).filter((el) => el.tabIndex >= 0 && el.offsetParent !== null);
   }
 
   private inputEl(): HTMLInputElement | null {

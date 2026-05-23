@@ -36,12 +36,14 @@
 }
 
 <p-tree
+  #treeHost
   [value]="treeNodes()"
   selectionMode="checkbox"
   [propagateSelectionDown]="true"
   [propagateSelectionUp]="true"
   [(selection)]="selectedNodesValue"
   (selectionChange)="onSelectionChange($event)"
+  (keydown)="onTreeKeyDown($event)"
   class="hds-tree w-full border-0 p-0"
 >
   <ng-template let-node pTemplate="default">
