@@ -2,8 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FormsModule } from '@angular/forms';
@@ -30,6 +33,26 @@ export class HdsSelectedChipsListComponent {
   readonly visibleFields = computed(() =>
     this.fields().filter((f) => f.visible),
   );
+
+  private readonly scrollContainer =
+    viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
+
+  constructor() {
+    let previousLength = 0;
+    effect(() => {
+      const length = this.items().length;
+      // New chips are appended, so when the list grows scroll to the bottom
+      // to keep the freshest pick in view even if the user had scrolled up
+      // through older chips. Removals don't trigger a scroll.
+      if (length > previousLength) {
+        queueMicrotask(() => {
+          const el = this.scrollContainer()?.nativeElement;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      }
+      previousLength = length;
+    });
+  }
 
   removeItem(item: AbstractData): void {
     const key = this.emitField();

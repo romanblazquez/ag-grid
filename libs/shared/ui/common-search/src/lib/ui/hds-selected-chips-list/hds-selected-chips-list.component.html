@@ -1,5 +1,6 @@
 @if (items().length > 0) {
   <div
+    #scrollContainer
     class="hds-selected-chips-list border-b border-surface-200 dark:border-surface-700"
     [class.overflow-y-auto]="maxRows() > 0 && items().length > maxRows()"
     [style.max-height]="maxRows() > 0 ? maxRows() * 2.5 + 'rem' : null"
