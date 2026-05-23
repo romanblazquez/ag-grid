@@ -502,7 +502,11 @@ export class HdsCommonSearchComponent {
     const ac = this.autoComplete() as unknown as
       | { hide?: (isFocus?: boolean) => void }
       | undefined;
-    ac?.hide?.(true);
+    // hide(false): do NOT refocus the input — PrimeNG's hide(true) defers a
+    // focus() via setTimeout(0) which triggers onFocusIn → openInitialPanel,
+    // re-opening the panel we just closed. The chevron's mousedown.preventDefault
+    // already keeps focus stable.
+    ac?.hide?.();
     this.cancelPendingQuery();
     this.releaseCoordinator();
   }
@@ -524,6 +528,9 @@ export class HdsCommonSearchComponent {
   private acquireCoordinator(): void {
     const fg = this.formGroup();
     if (!fg) return;
+    // Release our own slot first so `acquire` doesn't find the stale entry
+    // and call our own `silentClose` back on ourselves.
+    this.releaseCoordinator();
     this.panelToken = this.panelCoordinator.acquire(fg, () =>
       this.silentClose(),
     );
@@ -1003,30 +1010,46 @@ export class HdsCommonSearchComponent {
   }
 
   copyCsv(): void {
-    const el = this.inputEl();
-    if (el) {
-      el.focus();
-      el.select();
-    }
-    document.execCommand('copy');
+    const text = this.inputEl()?.value ?? '';
+    this.writeToClipboard(text);
     this.exitCsvMode();
   }
 
   cutCsv(): void {
-    const el = this.inputEl();
-    if (el) {
-      el.focus();
-      el.select();
-    }
-    document.execCommand('copy');
+    const text = this.inputEl()?.value ?? '';
+    this.writeToClipboard(text);
     this.resetSearch();
     this.exitCsvMode();
+  }
+
+  private writeToClipboard(text: string): void {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() =>
+        this.fallbackCopy(text),
+      );
+    } else {
+      this.fallbackCopy(text);
+    }
+  }
+
+  private fallbackCopy(text: string): void {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
   }
 
   exitCsvMode(): void {
     if (!this.csvMode()) return;
     this.csvMode.set(false);
     this.clearInputBox();
+    this.searchQuery.set('');
+    this.lastTypedQuery.set('');
   }
 
   onCsvKeydown(event: KeyboardEvent): void {

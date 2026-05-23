@@ -39,7 +39,7 @@
         appendTo="body"
         [dropdown]="false"
         [showEmptyMessage]="false"
-        [showClear]="showClear() && chipsValue().length > 0 && !csvMode()"
+        [showClear]="showClear() && chipsValue().length > 0"
         [addOnBlur]="false"
         [separator]="separator()"
         (onClear)="clearSearch()"
