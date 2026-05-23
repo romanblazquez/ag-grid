@@ -39,7 +39,7 @@
         appendTo="body"
         [dropdown]="false"
         [showEmptyMessage]="false"
-        [showClear]="showClear() && chipsValue().length > 0"
+        [showClear]="false"
         [addOnBlur]="false"
         [separator]="separator()"
         (onClear)="clearSearch()"
@@ -105,6 +105,27 @@
         </ng-template>
       </p-autocomplete>
 
+      @if (collapsed() && !csvMode()) {
+        <span
+          class="hds-summary-chip"
+          [pTooltip]="overflowTooltip()"
+          tooltipPosition="top"
+          (dblclick)="onChipsDblClick()"
+        >{{ summaryLabel() }}</span>
+      }
+
+      @if (showClear() && chipsValue().length > 1 && !csvMode()) {
+        <button
+          type="button"
+          class="hds-search-clear-button"
+          tabindex="-1"
+          (mousedown)="$event.preventDefault()"
+          (click)="clearSearch()"
+        >
+          <span class="pi pi-times" aria-hidden="true"></span>
+        </button>
+      }
+
       @if (csvMode()) {
         <div
           class="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 z-20"
@@ -146,14 +167,6 @@
       label() || placeholder()
     }}</label>
 
-    @if (collapsed() && !csvMode()) {
-      <span
-        class="absolute right-[4.25rem] top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full pointer-events-auto cursor-pointer z-10 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200"
-        [pTooltip]="overflowTooltip()"
-        tooltipPosition="top"
-        (dblclick)="onChipsDblClick()"
-      >{{ summaryLabel() }}</span>
-    }
   </p-floatlabel>
 
   @if (errorMessage()) {
