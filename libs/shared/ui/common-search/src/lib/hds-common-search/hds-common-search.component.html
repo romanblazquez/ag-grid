@@ -2,6 +2,7 @@
   class="block relative w-full py-1"
   [ngClass]="[
     disabled() ? 'opacity-60 pointer-events-none' : '',
+    csvMode() ? 'hds-csv-mode' : '',
     containerClass()
   ]"
   [style.min-width]="minWidth() || null"
@@ -11,7 +12,7 @@
     variant="on"
     [class.hds-common-search__float--active]="labelRaised()"
   >
-    <div class="hds-search-shell flex w-full items-stretch min-w-0">
+    <div class="hds-search-shell flex w-full items-stretch min-w-0 relative">
       <p-autocomplete
         #commonSearch
         [inputId]="inputId()"
@@ -23,21 +24,22 @@
         [panelStyleClass]="resolvedPanelClass()"
         [size]="size()"
         styleClass="hds-search-autocomplete"
-        [class.hds-search-autocomplete--collapsed]="collapsed()"
+        [class.hds-search-autocomplete--collapsed]="collapsed() && !csvMode()"
         [class.ng-invalid]="myControl.invalid && myControl.dirty"
         [class.ng-dirty]="myControl.invalid && myControl.dirty"
         (completeMethod)="onSearch($event)"
         (onSelect)="onProxySelect()"
         (onUnselect)="onChipRemove($any($event))"
-        (onFocus)="onFocusIn()"
-        (onBlur)="onFocusOut($any($event))"
-        (keydown)="onInputKeyDown($event)"
-        (onInputKeydown)="onInputKeydownEarly($event)"
+        (onFocus)="csvMode() ? null : onFocusIn()"
+        (onBlur)="csvMode() ? exitCsvMode() : onFocusOut($any($event))"
+        (keydown)="csvMode() ? onCsvKeydown($event) : onInputKeyDown($event)"
+        (onInputKeydown)="csvMode() ? null : onInputKeydownEarly($event)"
         (paste)="onInputPaste($event)"
+        (dblclick)="onChipsDblClick()"
         appendTo="body"
         [dropdown]="false"
         [showEmptyMessage]="false"
-        [showClear]="showClear() && chipsValue().length > 0"
+        [showClear]="showClear() && chipsValue().length > 0 && !csvMode()"
         [addOnBlur]="false"
         [separator]="separator()"
         (onClear)="clearSearch()"
@@ -102,7 +104,29 @@
         </ng-template>
       </p-autocomplete>
 
-      @if (dropdown()) {
+      @if (csvMode()) {
+        <div
+          class="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 z-20"
+          (mousedown)="$event.preventDefault()"
+        >
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+            (click)="copyCsv()"
+          >
+            <span class="pi pi-copy text-xs"></span> Copy
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+            (click)="cutCsv()"
+          >
+            <span class="pi pi-clipboard text-xs"></span> Cut
+          </button>
+        </div>
+      }
+
+      @if (dropdown() && !csvMode()) {
         <button
           type="button"
           class="hds-search-dropdown-button"
@@ -121,11 +145,12 @@
       label() || placeholder()
     }}</label>
 
-    @if (collapsed()) {
+    @if (collapsed() && !csvMode()) {
       <span
-        class="absolute right-[4.25rem] top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full pointer-events-auto cursor-default z-10 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200"
+        class="absolute right-[4.25rem] top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full pointer-events-auto cursor-pointer z-10 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200"
         [pTooltip]="overflowTooltip()"
         tooltipPosition="top"
+        (dblclick)="onChipsDblClick()"
       >{{ summaryLabel() }}</span>
     }
   </p-floatlabel>

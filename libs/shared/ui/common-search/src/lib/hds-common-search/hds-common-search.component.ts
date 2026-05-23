@@ -136,6 +136,7 @@ export class HdsCommonSearchComponent {
   readonly panelVisible = signal(false);
   readonly focused = signal(false);
   readonly lastTypedQuery = signal<string>('');
+  readonly csvMode = signal(false);
 
   readonly myControl = new FormControl<string[]>([]);
 
@@ -985,6 +986,56 @@ export class HdsCommonSearchComponent {
     return Array.from(
       document.querySelectorAll<HTMLElement>(selector),
     ).filter((el) => el.tabIndex >= 0 && el.offsetParent !== null);
+  }
+
+  onChipsDblClick(): void {
+    const chips = this.chipsValue();
+    if (chips.length === 0) return;
+    if (this.panelVisible()) this.closePanel();
+    const csv = chips.join(', ');
+    this.csvMode.set(true);
+    const el = this.inputEl();
+    if (el) {
+      el.value = csv;
+      el.focus();
+      el.select();
+    }
+  }
+
+  copyCsv(): void {
+    const el = this.inputEl();
+    if (el) {
+      el.focus();
+      el.select();
+    }
+    document.execCommand('copy');
+    this.exitCsvMode();
+  }
+
+  cutCsv(): void {
+    const el = this.inputEl();
+    if (el) {
+      el.focus();
+      el.select();
+    }
+    document.execCommand('copy');
+    this.resetSearch();
+    this.exitCsvMode();
+  }
+
+  exitCsvMode(): void {
+    if (!this.csvMode()) return;
+    this.csvMode.set(false);
+    this.clearInputBox();
+  }
+
+  onCsvKeydown(event: KeyboardEvent): void {
+    if (!this.csvMode()) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.exitCsvMode();
+    }
   }
 
   private inputEl(): HTMLInputElement | null {

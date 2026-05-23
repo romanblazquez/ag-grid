@@ -166,3 +166,19 @@
 ::ng-deep .hds-megamenu-overlay .p-autocomplete-list-container {
   display: none;
 }
+
+/* CSV-copy mode: hide the chip pills so only the plain-text CSV is visible
+   in the input. The input stretches full-width for easy selection. */
+::ng-deep .hds-csv-mode {
+  .p-autocomplete-chip-item {
+    display: none !important;
+  }
+
+  .p-autocomplete-input-chip {
+    flex: 1 1 100%;
+
+    input {
+      width: 100%;
+    }
+  }
+}
