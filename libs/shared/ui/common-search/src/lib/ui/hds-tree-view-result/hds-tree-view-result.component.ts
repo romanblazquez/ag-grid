@@ -107,25 +107,27 @@ export class HdsTreeViewResultComponent {
     effect(() => {
       this.valueToNodeMap.clear();
       const emitKey = this.emitField();
-      const disable = untracked(() => this.disableSelected());
+      const disable = this.disableSelected();
       const preKeys = new Set(
-        untracked(() => this.preSelected()).map((d) => d[emitKey] as string),
+        this.preSelected().map((d) => d[emitKey] as string),
       );
       const nodes = this.searchResults().flatMap((n) =>
         this.toPrimeNodes(n, 0, preKeys, emitKey, disable),
       );
-      this.treeNodes.set(nodes);
-      if (preKeys.size > 0) {
-        const restored: PrimeTreeNode[] = [];
-        this.valueToNodeMap.forEach((node) => {
-          if (node.children?.length) return;
-          const d = node.data as Record<string, unknown> | undefined;
-          if (d && preKeys.has(d[emitKey] as string)) restored.push(node);
-        });
-        this.selectedNodes.set(restored);
-      } else {
-        this.selectedNodes.set([]);
-      }
+      untracked(() => {
+        this.treeNodes.set(nodes);
+        if (preKeys.size > 0) {
+          const restored: PrimeTreeNode[] = [];
+          this.valueToNodeMap.forEach((node) => {
+            if (node.children?.length) return;
+            const d = node.data as Record<string, unknown> | undefined;
+            if (d && preKeys.has(d[emitKey] as string)) restored.push(node);
+          });
+          this.selectedNodes.set(restored);
+        } else {
+          this.selectedNodes.set([]);
+        }
+      });
     });
 
     effect(() => {
