@@ -149,15 +149,33 @@ export class HdsTreeViewResultComponent {
     nodes: PrimeTreeNode | PrimeTreeNode[] | null | undefined,
   ): void {
     const arr = Array.isArray(nodes) ? nodes : nodes ? [nodes] : [];
-    this.selectedNodes.set(arr);
 
     const emitKey = this.emitField();
+    const preKeys = new Set(
+      this.preSelected().map((d) => d[emitKey] as string),
+    );
+
+    // PrimeNG's `propagateSelectionDown` sweeps every descendant when a
+    // parent is toggled, ignoring `selectable: false`. Drop rule-disabled
+    // leaves so a parent click can't smuggle them in, but keep
+    // pre-selected-disabled leaves (already shown as chips — those stay
+    // committed regardless of what propagation does).
+    const filtered = arr.filter((n) => {
+      if (n.selectable !== false) return true;
+      if (n.children?.length) return false;
+      const d = n.data as Record<string, unknown> | undefined;
+      const key = d?.[emitKey] as string | undefined;
+      return key !== undefined && preKeys.has(key);
+    });
+
+    this.selectedNodes.set(filtered);
+
     const primaryField = this.detailFields()[0]?.name;
     const data: Record<string, unknown>[] = [];
     const values: CommonSearchValue[] = [];
     const displayText: string[] = [];
 
-    for (const n of arr) {
+    for (const n of filtered) {
       if (n.children?.length) continue;
       const d = n.data as Record<string, unknown>;
       const rawEmitVal = d[emitKey];
