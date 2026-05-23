@@ -58,6 +58,7 @@ import { AutoToggle } from '../model/auto-toggle.interface';
 import { CommonSearchInteractionType } from '../model/common-search-interaction-type.enum';
 import { moduleName } from '../model/constants';
 import { DataAccessFacadeService } from '../data-access/data-access-facade.service';
+import { PanelCoordinatorService } from '../data-access/panel-coordinator.service';
 import {
   TrackingEvent,
   TrackingEventName,
@@ -244,9 +245,11 @@ export class HdsCommonSearchComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly dataFacadeService = inject(DataAccessFacadeService);
   private readonly trackingService = inject(TrackingService);
+  private readonly panelCoordinator = inject(PanelCoordinatorService);
 
   private formGroupRegistered = false;
   private focusOutTimer: ReturnType<typeof setTimeout> | null = null;
+  private panelToken: symbol | null = null;
 
   private emitAutoDeselect(value: string): void {
     if (!value) return;
@@ -391,6 +394,7 @@ export class HdsCommonSearchComponent {
         clearTimeout(this.focusOutTimer);
         this.focusOutTimer = null;
       }
+      this.releaseCoordinator();
     });
   }
 
@@ -477,8 +481,10 @@ export class HdsCommonSearchComponent {
   }
 
   private showPanel(): void {
+    const wasHidden = !this.panelVisible();
     this.panelVisible.set(true);
     this.openPanel();
+    if (wasHidden) this.acquireCoordinator();
   }
 
   private closePanel(): void {
@@ -488,6 +494,36 @@ export class HdsCommonSearchComponent {
       | undefined;
     ac?.hide?.(true);
     this.cancelPendingQuery();
+    this.releaseCoordinator();
+  }
+
+  /** Close requested by the coordinator (another panel in the same form
+   * group is opening). Identical to `closePanel` except we ask PrimeNG to
+   * skip the refocus that `hide(true)` does — otherwise we'd yank focus away
+   * from the panel that's about to open. */
+  private silentClose(): void {
+    this.panelVisible.set(false);
+    const ac = this.autoComplete() as unknown as
+      | { hide?: (isFocus?: boolean) => void }
+      | undefined;
+    ac?.hide?.();
+    this.cancelPendingQuery();
+    this.releaseCoordinator();
+  }
+
+  private acquireCoordinator(): void {
+    const fg = this.formGroup();
+    if (!fg) return;
+    this.panelToken = this.panelCoordinator.acquire(fg, () =>
+      this.silentClose(),
+    );
+  }
+
+  private releaseCoordinator(): void {
+    const fg = this.formGroup();
+    if (!fg || this.panelToken === null) return;
+    this.panelCoordinator.release(fg, this.panelToken);
+    this.panelToken = null;
   }
 
   private openInitialPanel(): void {
@@ -541,6 +577,7 @@ export class HdsCommonSearchComponent {
     // blurred, refocused — still saw only "AAPL"). Chips (`currSelected`)
     // are untouched because they're confirmed selections, not filter state.
     this.cancelPendingQuery();
+    this.releaseCoordinator();
   }
 
   /** Reset any typed-but-not-committed query so the next open starts fresh. */
