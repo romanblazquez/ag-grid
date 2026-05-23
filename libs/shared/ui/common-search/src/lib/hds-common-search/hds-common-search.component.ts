@@ -461,7 +461,11 @@ export class HdsCommonSearchComponent {
       this.focusOutTimer = null;
     }
 
-    if (this.panelVisible() || this.isPrimePanelOpen()) {
+    // PrimeNG's `hide()` defers `overlayVisible=false` via setTimeout(0), so
+    // its `overlayVisible` lags our `panelVisible` after a close. Trust the
+    // synchronous signal instead — otherwise a fast reopen click is misread
+    // as a second close.
+    if (this.panelVisible()) {
       this.closePanel();
       return;
     }
@@ -470,13 +474,6 @@ export class HdsCommonSearchComponent {
     this.focused.set(true);
     if (this.searchResults().length > 0) this.showPanel();
     else this.openInitialPanel();
-  }
-
-  private isPrimePanelOpen(): boolean {
-    const ac = this.autoComplete() as unknown as
-      | { overlayVisible?: boolean }
-      | undefined;
-    return !!ac?.overlayVisible;
   }
 
   private showPanel(): void {

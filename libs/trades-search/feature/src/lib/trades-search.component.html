@@ -1,10 +1,10 @@
 <div class="flex flex-wrap items-start gap-3 p-3 w-full">
   <!-- Filters region grows; wraps onto multiple lines when the row can't fit. -->
-  <div class="flex flex-wrap items-start gap-3 flex-1 min-w-0">
     <!-- Group 1: Symbol + Fund. `basis-[22rem]` is the preferred width before wrap. -->
     <div class="flex items-start gap-2 min-w-0 flex-1 basis-[22rem]">
       <lib-hds-common-search
         class="flex-1 basis-0 min-w-[11rem]"
+        size="small"
         (clearEvent)="removeSymbol()"
         (emitSelection)="selectCompanySuggestion($event)"
         [clearSelection]="clearSignal()"
@@ -113,7 +113,6 @@
         [allowFutureDates]="true"
       />
     </div>
-  </div>
 
   <!-- Action sidebar: aligns to the right, stretches to fill row height. -->
   <aside
