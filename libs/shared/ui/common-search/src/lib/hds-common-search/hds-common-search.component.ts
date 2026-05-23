@@ -203,7 +203,7 @@ export class HdsCommonSearchComponent {
   private readonly visibleResultDisplayTexts = computed<string[]>(() => {
     const ctx = this.serviceContext();
     if (!ctx) return [];
-    const primary = ctx.detailFields?.[0]?.name;
+    const primary = ctx.chipDisplayField ?? ctx.detailFields?.[0]?.name;
     const fallback = ctx.emitField;
     if (this.isTreeView()) {
       const out: string[] = [];
@@ -788,7 +788,8 @@ export class HdsCommonSearchComponent {
 
   private resolveDisplayText(d: AbstractData): string {
     const ctx = this.serviceContext();
-    const primary = ctx?.detailFields?.[0]?.name;
+    const chip = ctx?.chipDisplayField;
+    const primary = chip ?? ctx?.detailFields?.[0]?.name;
     const fallback = ctx?.emitField ?? '';
     const v = primary ? (d[primary] as string) : '';
     return v && v.length > 0 ? v : ((d[fallback] as string) ?? '');

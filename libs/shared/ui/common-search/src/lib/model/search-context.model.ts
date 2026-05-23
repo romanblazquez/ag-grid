@@ -10,6 +10,9 @@ export interface Context {
   searchType: SearchType;
   placeholder: string;
   emitField: string;
+  /** Field name whose value is shown as chip text. Falls back to
+   *  `detailFields[0].name` then `emitField` when omitted. */
+  chipDisplayField?: string;
   detailFields: DetailField[];
   detailHeaders: string[];
   fieldWidths: Record<string, number>;

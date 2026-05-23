@@ -38,6 +38,7 @@ export const SEARCH_CONTEXT_REGISTRY: Record<SearchType, Context> = {
     searchType: SearchType.Broker,
     placeholder: 'Broker',
     emitField: 'firmSourceId',
+    chipDisplayField: 'firmCode',
     detailFields: [
       { name: 'firmName', visible: true },
       { name: 'firmCode', visible: true },
@@ -53,6 +54,7 @@ export const SEARCH_CONTEXT_REGISTRY: Record<SearchType, Context> = {
     searchType: SearchType.Trader,
     placeholder: 'Trader',
     emitField: 'personSourceId',
+    chipDisplayField: 'desk',
     detailFields: [
       { name: 'fullName', visible: true },
       { name: 'desk', visible: true },
@@ -68,6 +70,7 @@ export const SEARCH_CONTEXT_REGISTRY: Record<SearchType, Context> = {
     searchType: SearchType.InstrumentType,
     placeholder: 'Instrument Type',
     emitField: 'code',
+    chipDisplayField: 'code',
     detailFields: [
       { name: 'description', visible: true },
       { name: 'code', visible: true },

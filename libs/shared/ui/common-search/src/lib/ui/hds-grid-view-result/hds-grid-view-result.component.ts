@@ -225,9 +225,10 @@ export class HdsGridViewResultComponent {
 
   private extractDisplayText(data: AbstractData[]): string[] {
     return data.map((d) => {
-      const primary = this.viewContext().detailFields[0]?.name;
-      const fallback = this.viewContext().emitField;
-      const val = d[primary] as string;
+      const ctx = this.viewContext();
+      const primary = ctx.chipDisplayField ?? ctx.detailFields[0]?.name;
+      const fallback = ctx.emitField;
+      const val = primary ? (d[primary] as string) : '';
       return val && val.length > 0 ? val : (d[fallback] as string);
     });
   }

@@ -34,6 +34,7 @@ export class HdsTreeViewResultComponent {
   readonly detailFields = input<DetailField[]>([]);
   readonly displayField = input<string>('');
   readonly emitField = input<string>('');
+  readonly chipDisplayField = input<string | undefined>(undefined);
   readonly headers = input<string[]>([]);
   readonly fieldWidths = input<Record<string, number>>({});
   readonly autoToggle = input<AutoToggle | undefined>(undefined);
@@ -172,7 +173,8 @@ export class HdsTreeViewResultComponent {
 
     this.selectedNodes.set(filtered);
 
-    const primaryField = this.detailFields()[0]?.name;
+    const primaryField =
+      this.chipDisplayField() ?? this.detailFields()[0]?.name;
     const data: Record<string, unknown>[] = [];
     const values: CommonSearchValue[] = [];
     const displayText: string[] = [];
