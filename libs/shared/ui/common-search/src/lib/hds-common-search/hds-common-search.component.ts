@@ -1270,6 +1270,9 @@ export class HdsCommonSearchComponent {
     this.currSelected.set([]);
     this.panelVisible.set(false);
     this.clearTrigger.set({});
+    // Reset to undefined so a newly created grid/tree child doesn't see
+    // a stale truthy value and fire its clear effect on mount.
+    queueMicrotask(() => this.clearTrigger.set(undefined));
   }
 
   private validSelectionValidator(): ValidatorFn {
