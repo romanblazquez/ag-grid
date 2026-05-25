@@ -106,12 +106,31 @@
       </p-autocomplete>
 
       @if (collapsed() && !csvMode()) {
-        <span
-          class="hds-summary-chip"
-          [pTooltip]="overflowTooltip()"
-          tooltipPosition="top"
-          (dblclick)="onChipsDblClick()"
-        >{{ summaryLabel() }}</span>
+        @if (showAsSummary()) {
+          <!-- Collapsed summary: "N Items" with tooltip -->
+          <span
+            class="hds-summary-chip"
+            [pTooltip]="overflowTooltip()"
+            tooltipPosition="top"
+            (dblclick)="onChipsDblClick()"
+          >{{ summaryLabel() }}</span>
+        } @else {
+          <!-- Individual chips with remove icon -->
+          <div
+            class="hds-chips-container"
+            (dblclick)="onChipsDblClick()"
+          >
+            @for (chip of chipsValue(); track chip) {
+              <span class="hds-chip">
+                <span class="hds-chip-label">{{ chip }}</span>
+                <span
+                  class="hds-chip-remove pi pi-times"
+                  (click)="onSelectedChipUnchecked(chip); $event.stopPropagation()"
+                ></span>
+              </span>
+            }
+          </div>
+        }
       }
 
       @if (showClear() && chipsValue().length > 1 && !csvMode()) {

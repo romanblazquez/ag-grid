@@ -137,6 +137,7 @@ export class HdsCommonSearchComponent {
   readonly focused = signal(false);
   readonly lastTypedQuery = signal<string>('');
   readonly csvMode = signal(false);
+  readonly csvText = signal<string>('');
 
   readonly myControl = new FormControl<string[]>([]);
 
@@ -176,7 +177,11 @@ export class HdsCommonSearchComponent {
     return Math.max(0, this.chipsValue().length - max);
   });
 
-  readonly collapsed = computed(() => this.overflowCount() > 0);
+  /** Always true when chips exist — hides PrimeNG's internal chip rendering. */
+  readonly collapsed = computed(() => this.chipsValue().length > 0);
+
+  /** True when chips exceed maxVisibleChips — show "N Items" summary instead of individual chips. */
+  readonly showAsSummary = computed(() => this.overflowCount() > 0);
 
   readonly summaryLabel = computed(() => {
     const n = this.chipsValue().length;
@@ -184,7 +189,7 @@ export class HdsCommonSearchComponent {
   });
 
   readonly overflowTooltip = computed(() =>
-    this.collapsed() ? this.chipsValue().join(', ') : '',
+    this.showAsSummary() ? this.chipsValue().join(', ') : '',
   );
 
   readonly labelRaised = computed(
@@ -255,6 +260,10 @@ export class HdsCommonSearchComponent {
   private formGroupRegistered = false;
   private focusOutTimer: ReturnType<typeof setTimeout> | null = null;
   private panelToken: symbol | null = null;
+  private chipRemoveTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingChipRemove: { originalEvent: Event; value: string } | null =
+    null;
+  private csvModeEntryGuard = false;
 
   private emitAutoDeselect(value: string): void {
     if (!value) return;
@@ -406,6 +415,10 @@ export class HdsCommonSearchComponent {
       if (this.focusOutTimer !== null) {
         clearTimeout(this.focusOutTimer);
         this.focusOutTimer = null;
+      }
+      if (this.chipRemoveTimer !== null) {
+        clearTimeout(this.chipRemoveTimer);
+        this.chipRemoveTimer = null;
       }
       this.releaseCoordinator();
     });
@@ -712,6 +725,21 @@ export class HdsCommonSearchComponent {
   }
 
   onChipRemove(event: { originalEvent: Event; value: string }): void {
+    // Defer removal to allow dblclick detection. If the user is
+    // double-clicking a chip to enter CSV mode, we cancel the removal.
+    if (this.chipRemoveTimer) clearTimeout(this.chipRemoveTimer);
+    this.pendingChipRemove = event;
+    this.chipRemoveTimer = setTimeout(() => {
+      this.chipRemoveTimer = null;
+      this.processPendingChipRemove();
+    }, 250);
+  }
+
+  private processPendingChipRemove(): void {
+    const event = this.pendingChipRemove;
+    this.pendingChipRemove = null;
+    if (!event) return;
+
     const current = (this.myControl.value ?? []).filter(
       (v): v is string => typeof v === 'string',
     );
@@ -737,23 +765,33 @@ export class HdsCommonSearchComponent {
   }
 
   onSelectedChipUnchecked(value: string): void {
-    const emitKey = this.serviceContext()?.emitField;
     const valueKey = `${value ?? ''}`;
-    const match = emitKey
-      ? this.currSelected().find((d) => this.resolveEmitKey(d) === valueKey)
-      : undefined;
+    // Match by emit key OR display text — our custom chips pass display text,
+    // while the grid/tree chipRemoved output passes the emit value.
+    const match = this.currSelected().find(
+      (d) =>
+        this.resolveEmitKey(d) === valueKey ||
+        this.resolveDisplayText(d) === valueKey,
+    );
     const displayText = match ? this.resolveDisplayText(match) : value;
+    const emitValue = match ? this.resolveEmitKey(match) : value;
 
     const next = (this.myControl.value ?? []).filter(
       (v) => v !== displayText && v !== value,
     );
     this.myControl.setValue(next);
-    this.currSelected.set(
-      this.currSelected().filter((d) =>
-        emitKey ? this.resolveEmitKey(d) !== valueKey : true,
-      ),
-    );
-    this.emitAutoDeselect(value);
+
+    if (match) {
+      this.currSelected.set(
+        this.currSelected().filter((d) =>
+          emitValue.length > 0
+            ? this.resolveEmitKey(d) !== emitValue
+            : d !== match,
+        ),
+      );
+    }
+
+    this.emitAutoDeselect(displayText);
     this.emitCurrentSelectionState();
   }
 
@@ -1003,10 +1041,22 @@ export class HdsCommonSearchComponent {
   }
 
   onChipsDblClick(): void {
+    // Cancel any pending chip removal — this click was part of a dblclick,
+    // not a deliberate single-click remove.
+    if (this.chipRemoveTimer) {
+      clearTimeout(this.chipRemoveTimer);
+      this.chipRemoveTimer = null;
+      this.pendingChipRemove = null;
+    }
+
     const chips = this.chipsValue();
     if (chips.length === 0) return;
     if (this.panelVisible()) this.closePanel();
     const csv = chips.join(', ');
+    this.csvText.set(csv);
+    // Guard against PrimeNG's focus management causing an immediate blur
+    // that would trigger exitCsvMode and clear the text.
+    this.csvModeEntryGuard = true;
     this.csvMode.set(true);
     const el = this.inputEl();
     if (el) {
@@ -1014,16 +1064,19 @@ export class HdsCommonSearchComponent {
       el.focus();
       el.select();
     }
+    setTimeout(() => {
+      this.csvModeEntryGuard = false;
+    }, 200);
   }
 
   copyCsv(): void {
-    const text = this.inputEl()?.value ?? '';
+    const text = this.csvText() || this.inputEl()?.value || '';
     this.writeToClipboard(text);
     this.exitCsvMode();
   }
 
   cutCsv(): void {
-    const text = this.inputEl()?.value ?? '';
+    const text = this.csvText() || this.inputEl()?.value || '';
     this.writeToClipboard(text);
     this.resetSearch();
     this.exitCsvMode();
@@ -1052,8 +1105,9 @@ export class HdsCommonSearchComponent {
   }
 
   exitCsvMode(): void {
-    if (!this.csvMode()) return;
+    if (!this.csvMode() || this.csvModeEntryGuard) return;
     this.csvMode.set(false);
+    this.csvText.set('');
     this.clearInputBox();
     this.searchQuery.set('');
     this.lastTypedQuery.set('');
