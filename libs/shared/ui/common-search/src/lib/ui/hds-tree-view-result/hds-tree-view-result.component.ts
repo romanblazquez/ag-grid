@@ -78,9 +78,6 @@ export class HdsTreeViewResultComponent {
 
   private readonly valueToNodeMap = new Map<string, PrimeTreeNode>();
 
-  /** Programmatic entry point used by the parent when the user presses
-   * ArrowDown from the input — moves focus to the first tree row, after
-   * which PrimeNG's `p-tree` handles arrows / space / enter natively. */
   focusFirstNode(): void {
     const host = this.treeHost()?.nativeElement as HTMLElement | undefined;
     if (!host) return;
@@ -95,10 +92,6 @@ export class HdsTreeViewResultComponent {
       return;
     }
     if (event.key === 'Tab') {
-      // PrimeNG's tree-node keydown lets Tab fall through to the browser,
-      // which would either trap focus inside the body-appended overlay or
-      // jump somewhere unrelated. Hijack here and let the parent decide
-      // which form control to focus next.
       event.preventDefault();
       this.tabOut.emit(event.shiftKey);
     }
@@ -113,18 +106,23 @@ export class HdsTreeViewResultComponent {
         this.preSelected().map((d) => d[emitKey] as string),
       );
       const nodes = this.searchResults().flatMap((n) =>
-        this.toPrimeNodes(n, 0, preKeys, emitKey, disable),
+        this.toPrimeNodes(n, null, preKeys, emitKey, disable),
       );
       untracked(() => {
         this.treeNodes.set(nodes);
         if (preKeys.size > 0) {
-          const restored: PrimeTreeNode[] = [];
+          const restoredLeaves: PrimeTreeNode[] = [];
           this.valueToNodeMap.forEach((node) => {
             if (node.children?.length) return;
             const d = node.data as Record<string, unknown> | undefined;
-            if (d && preKeys.has(d[emitKey] as string)) restored.push(node);
+            if (d && preKeys.has(d[emitKey] as string))
+              restoredLeaves.push(node);
           });
-          this.selectedNodes.set(restored);
+          const reconciled = this.reconcileSelection(
+            nodes,
+            new Set(restoredLeaves),
+          );
+          this.selectedNodes.set(reconciled);
         } else {
           this.selectedNodes.set([]);
         }
@@ -133,7 +131,10 @@ export class HdsTreeViewResultComponent {
 
     effect(() => {
       const clear = this.clearSelection();
-      if (clear) this.selectedNodes.set([]);
+      if (clear) {
+        this.selectedNodes.set([]);
+        this.clearPartialState(this.treeNodes());
+      }
     });
 
     effect(() => {
@@ -142,7 +143,14 @@ export class HdsTreeViewResultComponent {
         const norm = toggle.deselect.replace(/\s/g, '').toUpperCase();
         const node = this.valueToNodeMap.get(norm);
         if (node) {
-          this.selectedNodes.update((sel) => sel.filter((n) => n !== node));
+          const currentLeaves = this.selectedNodes().filter(
+            (n) => !n.children?.length && n !== node,
+          );
+          const reconciled = this.reconcileSelection(
+            this.treeNodes(),
+            new Set(currentLeaves),
+          );
+          this.selectedNodes.set(reconciled);
         }
       }
     });
@@ -158,20 +166,27 @@ export class HdsTreeViewResultComponent {
       this.preSelected().map((d) => d[emitKey] as string),
     );
 
-    // PrimeNG's `propagateSelectionDown` sweeps every descendant when a
-    // parent is toggled, ignoring `selectable: false`. Drop rule-disabled
-    // leaves so a parent click can't smuggle them in, but keep
-    // pre-selected-disabled leaves (already shown as chips — those stay
-    // committed regardless of what propagation does).
-    const filtered = arr.filter((n) => {
-      if (n.selectable !== false) return true;
-      if (n.children?.length) return false;
-      const d = n.data as Record<string, unknown> | undefined;
-      const key = d?.[emitKey] as string | undefined;
-      return key !== undefined && preKeys.has(key);
-    });
+    // Filter out rule-disabled leaves that propagation smuggled in,
+    // but keep pre-selected-disabled leaves (already committed as chips).
+    const needsFilter = arr.some((n) => n.selectable === false);
+    const effective = needsFilter
+      ? arr.filter((n) => {
+          if (n.selectable !== false) return true;
+          if (n.children?.length) return false;
+          const d = n.data as Record<string, unknown> | undefined;
+          const key = d?.[emitKey] as string | undefined;
+          return key !== undefined && preKeys.has(key);
+        })
+      : arr;
 
-    this.selectedNodes.set(filtered);
+    // Extract only leaf nodes from PrimeNG's selection for reconciliation.
+    // PrimeNG may include parents in its array; we recompute parent state ourselves.
+    const leaves = effective.filter((n) => !n.children?.length);
+    const reconciled = this.reconcileSelection(
+      this.treeNodes(),
+      new Set(leaves),
+    );
+    this.selectedNodes.set(reconciled);
 
     const primaryField =
       this.chipDisplayField() ?? this.detailFields()[0]?.name;
@@ -179,7 +194,7 @@ export class HdsTreeViewResultComponent {
     const values: CommonSearchValue[] = [];
     const displayText: string[] = [];
 
-    for (const n of filtered) {
+    for (const n of effective) {
       if (n.children?.length) continue;
       const d = n.data as Record<string, unknown>;
       const rawEmitVal = d[emitKey];
@@ -196,9 +211,86 @@ export class HdsTreeViewResultComponent {
     this.selected.emit({ data, values, displayText });
   }
 
+  /**
+   * Reconcile the selection array: walk the tree bottom-up and:
+   * - If ALL children of a parent are selected → add parent to selection,
+   *   set partialSelected = false (AG Grid: fully checked parent)
+   * - If SOME children are selected → set partialSelected = true,
+   *   do NOT add parent to selection (AG Grid: indeterminate dash)
+   * - If NONE → partialSelected = false, not in selection
+   *
+   * Returns the reconciled selection array (leaves + fully-selected parents).
+   */
+  private reconcileSelection(
+    nodes: PrimeTreeNode[],
+    leafSelection: Set<PrimeTreeNode>,
+  ): PrimeTreeNode[] {
+    const result: PrimeTreeNode[] = [];
+    this.reconcileNodes(nodes, leafSelection, result);
+    return result;
+  }
+
+  /**
+   * Recursively reconcile nodes. Returns true if ALL leaves under this
+   * subtree are selected (so parent can be marked fully checked).
+   */
+  private reconcileNodes(
+    nodes: PrimeTreeNode[],
+    leafSelection: Set<PrimeTreeNode>,
+    result: PrimeTreeNode[],
+  ): boolean {
+    let allSelected = true;
+    let anySelected = false;
+
+    for (const node of nodes) {
+      if (node.children?.length) {
+        const childrenAllSelected = this.reconcileNodes(
+          node.children,
+          leafSelection,
+          result,
+        );
+        const childrenAnySelected = node.children.some(
+          (c) =>
+            c.partialSelected ||
+            result.includes(c) ||
+            leafSelection.has(c),
+        );
+
+        if (childrenAllSelected) {
+          node.partialSelected = false;
+          result.push(node);
+          anySelected = true;
+        } else if (childrenAnySelected) {
+          node.partialSelected = true;
+          anySelected = true;
+          allSelected = false;
+        } else {
+          node.partialSelected = false;
+          allSelected = false;
+        }
+      } else {
+        if (leafSelection.has(node)) {
+          result.push(node);
+          anySelected = true;
+        } else {
+          allSelected = false;
+        }
+      }
+    }
+
+    return allSelected && anySelected;
+  }
+
+  private clearPartialState(nodes: PrimeTreeNode[]): void {
+    for (const n of nodes) {
+      n.partialSelected = false;
+      if (n.children?.length) this.clearPartialState(n.children);
+    }
+  }
+
   private toPrimeNodes(
     node: TreeNode,
-    level: number,
+    parentRef: PrimeTreeNode | null,
     preKeys: Set<string>,
     emitKey: string,
     disable: boolean,
@@ -206,7 +298,7 @@ export class HdsTreeViewResultComponent {
     if (node.header) {
       return (
         node.children?.flatMap((c) =>
-          this.toPrimeNodes(c, level, preKeys, emitKey, disable),
+          this.toPrimeNodes(c, parentRef, preKeys, emitKey, disable),
         ) ?? []
       );
     }
@@ -216,26 +308,34 @@ export class HdsTreeViewResultComponent {
       node.items.map((i) => [i.name, i.value]),
     ) as Record<string, unknown>;
     const isPreSelected = preKeys.has(data[emitKey] as string);
+    const primeNode: PrimeTreeNode = {
+      label:
+        (visibleItems.find((i) => i.name === this.displayField())
+          ?.value as string) ?? (visibleItems[0]?.value as string),
+      data,
+      selectable: true,
+      children: [],
+      expanded: true,
+      parent: parentRef ?? undefined,
+    };
+
     const children =
       node.children?.flatMap((c) =>
-        this.toPrimeNodes(c, level + 1, preKeys, emitKey, disable),
+        this.toPrimeNodes(c, primeNode, preKeys, emitKey, disable),
       ) ?? [];
+    primeNode.children = children;
+    primeNode.expanded = children.length > 0;
+
     const allChildrenDisabled =
       children.length > 0 && children.every((c) => c.selectable === false);
     const ruleDisabled = this.disableRule()(node);
     const shouldDisable =
       ruleDisabled ||
       (disable && (children.length > 0 ? allChildrenDisabled : isPreSelected));
-    const primeNode: PrimeTreeNode = {
-      label:
-        (visibleItems.find((i) => i.name === this.displayField())
-          ?.value as string) ?? (visibleItems[0]?.value as string),
-      data,
-      selectable: !shouldDisable,
-      styleClass: shouldDisable ? 'hds-tree-disabled-row' : undefined,
-      children,
-      expanded: children.length > 0,
-    };
+    if (shouldDisable) {
+      primeNode.selectable = false;
+      primeNode.styleClass = 'hds-tree-disabled-row';
+    }
 
     for (const item of visibleItems) {
       const norm = `${item.value}`.replace(/\s/g, '').toUpperCase();

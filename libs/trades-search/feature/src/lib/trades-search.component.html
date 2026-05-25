@@ -1,120 +1,111 @@
 <div class="flex flex-wrap items-start gap-3 p-3 w-full">
-  <!-- Filters region grows; wraps onto multiple lines when the row can't fit. -->
-    <!-- Group 1: Symbol + Fund. `basis-[22rem]` is the preferred width before wrap. -->
-    <div class="flex items-start gap-2 min-w-0 flex-1 basis-[22rem]">
-      <lib-hds-common-search
-        class="flex-1 basis-0 min-w-[11rem]"
-        size="small"
-        (clearEvent)="removeSymbol()"
-        (emitSelection)="selectCompanySuggestion($event)"
-        [clearSelection]="clearSignal()"
-        [formGroup]="formGroup"
-        inputId="trades-symbol-search"
-        [maxSelection]="30"
-        [maxVisibleChips]="2"
-        [minLengthForInputValue]="1"
-        [searchContext]="symbolSearchContext"
-        [dropdown]="true"
-        [showClear]="true"
-        [panelMaxHeight]="'28rem'"
-        [maxSelectedRows]="3"
-      />
-
-      @if (fundSearchContext()) {
-        <lib-hds-common-search
-          class="flex-1 basis-0 min-w-[11rem]"
-          (clearEvent)="removeFunds()"
-          (emitSelection)="selectFundSuggestion($event)"
-          [clearSelection]="clearSignal()"
-          [formGroup]="formGroup"
-          inputId="trades-fund-search"
-          [maxSelection]="30"
-          [maxVisibleChips]="1"
-          [minLengthForInputValue]="1"
-          [searchContext]="fundSearchContext()!"
-          [dropdown]="true"
-          [showClear]="true"
-          [panelMaxHeight]="'28rem'"
-          [maxSelectedRows]="3"
-        />
-      }
-    </div>
-
-    <p-divider
-      layout="vertical"
-      class="hidden xl:!flex self-stretch !mx-0"
+  <!-- All 5 autocomplete inputs: equal width, single row, fluid -->
+  <div class="flex items-start gap-2 min-w-0 flex-1">
+    <lib-hds-common-search
+      class="flex-1 min-w-0"
+      size="small"
+      (clearEvent)="removeSymbol()"
+      (emitSelection)="selectCompanySuggestion($event)"
+      [clearSelection]="clearSignal()"
+      [formGroup]="formGroup"
+      inputId="trades-symbol-search"
+      [maxSelection]="30"
+      [maxVisibleChips]="2"
+      [minLengthForInputValue]="1"
+      [searchContext]="symbolSearchContext"
+      [dropdown]="true"
+      [showClear]="true"
+      [panelMaxHeight]="'28rem'"
+      [maxSelectedRows]="3"
     />
 
-    <!-- Group 2: Counterparties — three inputs, prefers ~34rem. -->
-    <div class="flex items-start gap-2 min-w-0 flex-1 basis-[34rem]">
+    @if (fundSearchContext()) {
       <lib-hds-common-search
-        class="flex-1 basis-0 min-w-[11rem]"
-        (clearEvent)="removeIvTypes()"
-        (emitSelection)="selectInstrumentTypesSuggestion($event)"
+        class="flex-1 min-w-0"
+        (clearEvent)="removeFunds()"
+        (emitSelection)="selectFundSuggestion($event)"
         [clearSelection]="clearSignal()"
         [formGroup]="formGroup"
-        inputId="trades-instrument-type-search"
-        [maxSelection]="15"
-        [maxVisibleChips]="2"
-        [minLengthForInputValue]="0"
-        [searchContext]="instrumentTypeSearchContext"
-        [dropdown]="true"
-        [showClear]="true"
-        [panelMaxHeight]="'28rem'"
-        [maxSelectedRows]="3"
-      />
-
-      <lib-hds-common-search
-        class="flex-1 basis-0 min-w-[11rem]"
-        (clearEvent)="removeBrokers()"
-        (emitSelection)="selectBrokerSuggestion($event)"
-        [clearSelection]="clearSignal()"
-        [formGroup]="formGroup"
-        inputId="trades-broker-search"
+        inputId="trades-fund-search"
         [maxSelection]="30"
         [maxVisibleChips]="1"
         [minLengthForInputValue]="1"
-        [searchContext]="brokerSearchContext"
+        [searchContext]="fundSearchContext()!"
         [dropdown]="true"
         [showClear]="true"
         [panelMaxHeight]="'28rem'"
         [maxSelectedRows]="3"
       />
+    }
 
-      <lib-hds-common-search
-        class="flex-1 basis-0 min-w-[11rem]"
-        (clearEvent)="removeTraders()"
-        (emitSelection)="selectTraderSuggestion($event)"
-        [clearSelection]="clearSignal()"
-        [formGroup]="formGroup"
-        inputId="trades-trader-search"
-        [maxSelection]="15"
-        [maxVisibleChips]="2"
-        [minLengthForInputValue]="1"
-        [searchContext]="traderSearchContext"
-        [dropdown]="true"
-        [showClear]="true"
-        [panelMaxHeight]="'28rem'"
-        [maxSelectedRows]="3"
-      />
-    </div>
-
-    <p-divider
-      layout="vertical"
-      class="hidden xl:!flex self-stretch !mx-0"
+    <lib-hds-common-search
+      class="flex-1 min-w-0"
+      (clearEvent)="removeIvTypes()"
+      (emitSelection)="selectInstrumentTypesSuggestion($event)"
+      [clearSelection]="clearSignal()"
+      [formGroup]="formGroup"
+      inputId="trades-instrument-type-search"
+      [maxSelection]="15"
+      [maxVisibleChips]="2"
+      [minLengthForInputValue]="0"
+      [searchContext]="instrumentTypeSearchContext"
+      [dropdown]="true"
+      [showClear]="true"
+      [panelMaxHeight]="'28rem'"
+      [maxSelectedRows]="3"
     />
 
-    <!-- Group 3: Date range (natural width, never shrinks). -->
-    <div class="flex items-start gap-2 shrink-0 pt-1">
-      <lib-date-picker
-        #datePicker
-        (dateRangeEvent)="onDateRangeEventTriggered($event)"
-        (errorMessage)="setDateError($event)"
-        [allowFutureDates]="true"
-      />
-    </div>
+    <lib-hds-common-search
+      class="flex-1 min-w-0"
+      (clearEvent)="removeBrokers()"
+      (emitSelection)="selectBrokerSuggestion($event)"
+      [clearSelection]="clearSignal()"
+      [formGroup]="formGroup"
+      inputId="trades-broker-search"
+      [maxSelection]="30"
+      [maxVisibleChips]="1"
+      [minLengthForInputValue]="1"
+      [searchContext]="brokerSearchContext"
+      [dropdown]="true"
+      [showClear]="true"
+      [panelMaxHeight]="'28rem'"
+      [maxSelectedRows]="3"
+    />
 
-  <!-- Action sidebar: aligns to the right, stretches to fill row height. -->
+    <lib-hds-common-search
+      class="flex-1 min-w-0"
+      (clearEvent)="removeTraders()"
+      (emitSelection)="selectTraderSuggestion($event)"
+      [clearSelection]="clearSignal()"
+      [formGroup]="formGroup"
+      inputId="trades-trader-search"
+      [maxSelection]="15"
+      [maxVisibleChips]="2"
+      [minLengthForInputValue]="1"
+      [searchContext]="traderSearchContext"
+      [dropdown]="true"
+      [showClear]="true"
+      [panelMaxHeight]="'28rem'"
+      [maxSelectedRows]="3"
+    />
+  </div>
+
+  <p-divider
+    layout="vertical"
+    class="hidden xl:!flex self-stretch !mx-0"
+  />
+
+  <!-- Date range (natural width, never shrinks). -->
+  <div class="flex items-start gap-2 shrink-0 pt-1">
+    <lib-date-picker
+      #datePicker
+      (dateRangeEvent)="onDateRangeEventTriggered($event)"
+      (errorMessage)="setDateError($event)"
+      [allowFutureDates]="true"
+    />
+  </div>
+
+  <!-- Action sidebar -->
   <aside
     class="flex flex-row items-center gap-3 shrink-0 self-stretch pl-3 border-l border-surface-200 dark:border-surface-700"
   >
