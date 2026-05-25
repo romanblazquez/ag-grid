@@ -1,5 +1,6 @@
 export * from './search-type.enum';
 export * from './search-result.model';
+export * from './search-data-source.model';
 export * from './tree-node.model';
 export * from './search-context.model';
 export * from './auto-toggle.interface';

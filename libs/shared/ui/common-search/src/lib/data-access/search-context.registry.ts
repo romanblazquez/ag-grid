@@ -1,7 +1,16 @@
 import { Context } from '../model/search-context.model';
 import { SearchType } from '../model/search-type.enum';
 
-export const SEARCH_CONTEXT_REGISTRY: Record<SearchType, Context> = {
+/**
+ * Static registry of search contexts keyed by string.
+ * Pre-populated with the original trade-domain types for backward compat.
+ *
+ * New consumers can either:
+ * 1. Add entries here at build time (if the type is shared across features)
+ * 2. Call `DataAccessFacadeService.registerContext()` at runtime
+ * 3. Skip the registry entirely by passing `dataSourceFn` on `SearchContext`
+ */
+export const SEARCH_CONTEXT_REGISTRY: Record<string, Context> = {
   [SearchType.Symbol]: {
     searchType: SearchType.Symbol,
     placeholder: 'Symbol / CUSIP',

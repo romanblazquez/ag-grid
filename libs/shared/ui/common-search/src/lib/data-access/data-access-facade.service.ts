@@ -4,6 +4,7 @@ import { delay } from 'rxjs/operators';
 import { Context } from '../model/search-context.model';
 import { SearchContext } from '../model/search-context.model';
 import { SearchType } from '../model/search-type.enum';
+import { SearchDataSourceFn, SearchInitialDataFn } from '../model/search-data-source.model';
 import { AbstractData } from '../model/search-result.model';
 import { TreeNode } from '../model/tree-node.model';
 import { SEARCH_CONTEXT_REGISTRY } from './search-context.registry';
@@ -13,11 +14,16 @@ import {
 } from './mock-suggestions';
 
 /**
- * Mock implementation of the data-access layer used by hds-common-search.
+ * Data-access layer used by hds-common-search. It serves two roles:
  *
- * In a real app this would proxy a REST/GraphQL backend; here we return
- * filtered in-memory data with a small artificial delay so the UX (loading
- * states, dropdown opening) feels realistic.
+ * 1. **Registry mode** (legacy/default): Looks up a `Context` by `SearchType`
+ *    from the static `SEARCH_CONTEXT_REGISTRY` and fetches data from mock data.
+ *
+ * 2. **Callback mode** (new): When the consumer passes `dataSourceFn` on the
+ *    `SearchContext`, the service delegates directly to that function — zero
+ *    registry lookup, zero DI overhead on the hot path.
+ *
+ * New consumers should prefer callback mode for maximum performance.
  */
 @Injectable({ providedIn: 'root' })
 export class DataAccessFacadeService {
@@ -26,11 +32,75 @@ export class DataAccessFacadeService {
 
   private readonly preferences = signal<Record<string, unknown>>({});
 
-  getServiceContext(searchType: SearchType): Context {
-    return SEARCH_CONTEXT_REGISTRY[searchType];
+  private readonly customContexts = new Map<string, Context>();
+
+  // ── Public API ──────────────────────────────────────────────────────
+
+  /**
+   * Register a custom Context for a given search type key.
+   * This allows consumers outside of the hardcoded registry to register
+   * their own configurations at bootstrap or feature-init time.
+   */
+  registerContext(key: string, context: Context): void {
+    this.customContexts.set(key, context);
+  }
+
+  getServiceContext(searchType: string): Context {
+    return (
+      this.customContexts.get(searchType) ??
+      SEARCH_CONTEXT_REGISTRY[searchType as SearchType] ??
+      this.fallbackContext(searchType)
+    );
   }
 
   getSuggestedData(
+    ctx: Context,
+    searchType: string,
+    query: string,
+    dataSourceFn?: SearchDataSourceFn,
+  ): Observable<AbstractData[] | TreeNode[]> {
+    if (dataSourceFn) {
+      return dataSourceFn(query);
+    }
+    return this.getSuggestedDataFromRegistry(ctx, searchType as SearchType, query);
+  }
+
+  getInitialData(
+    ctx: Context,
+    searchType: string,
+    initialDataFn?: SearchInitialDataFn,
+    dataSourceFn?: SearchDataSourceFn,
+  ): Observable<AbstractData[] | TreeNode[]> {
+    if (initialDataFn) {
+      return initialDataFn();
+    }
+    if (dataSourceFn) {
+      return dataSourceFn('');
+    }
+    return this.getInitialDataFromRegistry(ctx, searchType as SearchType);
+  }
+
+  loadInitialData(ctx: SearchContext): Observable<boolean> {
+    void ctx;
+    return of(true);
+  }
+
+  loadPreferences(ctx: SearchContext): void {
+    void ctx;
+  }
+
+  setPreference(
+    ctx: SearchContext,
+    data: unknown[],
+    isTreeView: boolean | undefined,
+  ): void {
+    void isTreeView;
+    this.preferences.update((p) => ({ ...p, [ctx.searchType]: data }));
+  }
+
+  // ── Registry-based data fetching (backward compat) ──────────────────
+
+  private getSuggestedDataFromRegistry(
     ctx: Context,
     searchType: SearchType,
     query: string,
@@ -45,7 +115,7 @@ export class DataAccessFacadeService {
     return of(all.filter((row) => this.rowMatches(row, q))).pipe(delay(180));
   }
 
-  getInitialData(
+  private getInitialDataFromRegistry(
     ctx: Context,
     searchType: SearchType,
   ): Observable<AbstractData[] | TreeNode[]> {
@@ -56,24 +126,22 @@ export class DataAccessFacadeService {
     return of(suggestionsFor(searchType));
   }
 
-  loadInitialData(ctx: SearchContext): Observable<boolean> {
-    void ctx;
-    return of(true);
+  private fallbackContext(searchType: string): Context {
+    return {
+      searchType,
+      placeholder: searchType,
+      emitField: 'id',
+      detailFields: [{ name: 'label', visible: true }],
+      detailHeaders: ['Label'],
+      fieldWidths: { label: 100 },
+      panelWidth: 400,
+      isTreeView: false,
+      multiselect: true,
+      errorMessage: `No results found for "${searchType}"`,
+    };
   }
 
-  loadPreferences(ctx: SearchContext): void {
-    void ctx;
-    // No-op for mock impl.
-  }
-
-  setPreference(
-    ctx: SearchContext,
-    data: unknown[],
-    isTreeView: boolean | undefined,
-  ): void {
-    void isTreeView;
-    this.preferences.update((p) => ({ ...p, [ctx.searchType]: data }));
-  }
+  // ── Utils ───────────────────────────────────────────────────────────
 
   private rowMatches(row: AbstractData, q: string): boolean {
     for (const v of Object.values(row)) {

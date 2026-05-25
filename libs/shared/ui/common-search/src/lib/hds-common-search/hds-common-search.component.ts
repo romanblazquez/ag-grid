@@ -319,6 +319,8 @@ export class HdsCommonSearchComponent {
           const ctx = this.serviceContext();
           if (!ctx) return of([]);
           const searchType = this.searchContext().searchType;
+          const dsf = this.searchContext().dataSourceFn;
+          const idf = this.searchContext().initialDataFn;
 
           const withFallback = (source$: Observable<unknown[]>) =>
             source$.pipe(
@@ -326,7 +328,7 @@ export class HdsCommonSearchComponent {
                 const data = (results as AbstractData[]) ?? [];
                 if (data.length > 0) return of(data);
                 return this.dataFacadeService
-                  .getInitialData(ctx, searchType)
+                  .getInitialData(ctx, searchType, idf, dsf)
                   .pipe(
                     map((initial) =>
                       Array.isArray(initial) ? (initial as AbstractData[]) : [],
@@ -344,13 +346,14 @@ export class HdsCommonSearchComponent {
                     ctx,
                     searchType,
                     query,
+                    dsf,
                   ),
                 ),
               ),
             );
           }
           return withFallback(
-            this.dataFacadeService.getSuggestedData(ctx, searchType, query),
+            this.dataFacadeService.getSuggestedData(ctx, searchType, query, dsf),
           );
         }),
         catchError(() => {
@@ -562,8 +565,9 @@ export class HdsCommonSearchComponent {
     const ctx = this.serviceContext();
     if (!ctx || this.disabled()) return;
 
+    const sCtx = this.searchContext();
     this.dataFacadeService
-      .getInitialData(ctx, this.searchContext().searchType)
+      .getInitialData(ctx, sCtx.searchType, sCtx.initialDataFn, sCtx.dataSourceFn)
       .pipe(
         filter((d): d is AbstractData[] => Array.isArray(d) && d.length > 0),
         take(1),
@@ -797,7 +801,9 @@ export class HdsCommonSearchComponent {
 
   private resolveAndAddTokens(tokens: string[], prev: string[]): void {
     const ctx = this.serviceContext();
-    const searchType = this.searchContext().searchType;
+    const sCtx = this.searchContext();
+    const searchType = sCtx.searchType;
+    const dsf = sCtx.dataSourceFn;
     if (!ctx) return;
 
     if (this.isTreeView()) {
@@ -807,7 +813,7 @@ export class HdsCommonSearchComponent {
 
     const buildQueries = () => {
       const queries$ = tokens.map((token) =>
-        this.dataFacadeService.getSuggestedData(ctx, searchType, token).pipe(
+        this.dataFacadeService.getSuggestedData(ctx, searchType, token, dsf).pipe(
           take(1),
           map((results) =>
             this.matchToken(token, results as AbstractData[]),
