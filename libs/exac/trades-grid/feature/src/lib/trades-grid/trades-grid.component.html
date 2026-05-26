@@ -1,0 +1,13 @@
+<div class="exac-grid-container" id="myChart">
+  <ag-grid-angular
+    class="ag-theme-balham trades-grid"
+    [class.ag-theme-balham-dark]="isDarkTheme()"
+    [class.ag-theme-balham]="!isDarkTheme()"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    [gridOptions]="gridOptions"
+    [rowData]="rowData()"
+    [autoGroupColumnDef]="autoGroupColumnDef"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</div>

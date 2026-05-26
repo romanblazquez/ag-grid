@@ -1,0 +1,23 @@
+$height: 32px;
+$font-size: 14px;
+$line-height: calc(#{$height} / 2);
+
+.search-results {
+  height: $height;
+  display: block;
+  line-height: $line-height;
+}
+
+.search-result-column {
+  display: inline-block;
+  height: 100%;
+  font-size: $font-size;
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  padding-top: 15px;
+}
+
+.error-message {
+  margin-left: 14px;
+}

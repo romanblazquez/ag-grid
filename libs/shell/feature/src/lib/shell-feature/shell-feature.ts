@@ -4,12 +4,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { TradeGrid, TradeData, PersonService, CancellationRequest } from '@trade-platform/trade-grid';
 import { TradeDataService } from '@trade-platform/shared/data-access';
 import { StatsCard, ThemeSwitcher } from '@trade-platform/shared/ui-components';
-import { TradesSearchComponent } from '@trade-platform/trades-search/feature';
-import { TradesSearchFacadeService } from '@trade-platform/trades-search/data-access';
+import { ExacTradesSearchComponent } from '@trade-platform/exac/trades-search/feature';
+import { TradesSearchFacadeService } from '@trade-platform/exac/trades-search/data-access';
 
 @Component({
   selector: 'lib-shell-feature',
-  imports: [CommonModule, TradeGrid, StatsCard, ThemeSwitcher, TradesSearchComponent],
+  imports: [CommonModule, TradeGrid, StatsCard, ThemeSwitcher, ExacTradesSearchComponent],
   templateUrl: './shell-feature.html',
   styleUrl: './shell-feature.css',
 })

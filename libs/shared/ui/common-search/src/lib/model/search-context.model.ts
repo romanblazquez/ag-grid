@@ -22,6 +22,7 @@ export interface Context {
   multiselect?: boolean;
   initLoadData?: boolean;
   errorMessage?: string;
+  treeAttributes?: Record<number, string[]>;
 }
 
 export interface SearchContext {

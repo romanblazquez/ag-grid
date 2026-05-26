@@ -1,0 +1,20 @@
+@if (isExpandable) {
+  <span class="ag-cell-wrapper">
+    <span
+      class="ag-group-expanded"
+      [class.ag-group-expanded]="isExpanded"
+      [class.ag-group-contracted]="!isExpanded"
+    >
+      @if (isExpanded) {
+        <span class="ag-icon ag-icon-tree-open" (click)="toggleExpand($event)"></span>
+      }
+      @if (!isExpanded) {
+        <span class="ag-icon ag-icon-tree-closed" (click)="toggleExpand($event)"></span>
+      }
+    </span>
+    <span class="ag-group-value">{{ label }}</span>
+  </span>
+}
+@if (!isExpandable) {
+  <span>{{ label }}</span>
+}

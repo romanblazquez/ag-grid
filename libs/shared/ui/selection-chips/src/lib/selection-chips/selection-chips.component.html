@@ -1,0 +1,52 @@
+@for (context of chips; track context; let i = $index) {
+  <mat-chip-set aria-label="Chip selection" style="padding-right: 8px">
+    @if (context.items.length >= 5) {
+      <mat-chip
+        #trigger="cdkOverlayOrigin"
+        (mouseleave)="leftChip(i)"
+        (mouseover)="updateIsOpen(i)"
+        (removed)="removeAll(context.name)"
+        cdkOverlayOrigin
+      >{{ getAltChipLabel(context.pluralName, context.items.length) }}
+        <ng-template
+          [cdkConnectedOverlayOpen]="isOpen[i]"
+          [cdkConnectedOverlayOrigin]="trigger"
+          cdkConnectedOverlay
+        >
+          <mat-card
+            (mouseenter)="enteredOverlay(i)"
+            (mouseleave)="isOpen[i] = false"
+          >
+            <mat-card-content>
+              <mat-chip-set aria-label="Chip selection">
+                @for (item of context.items; track item) {
+                  <mat-chip (removed)="remove(context.name, item)">
+                    {{ getChipLabel(context.name, item) }}
+                    <button [attr.aria-label]="'remove chip'" matChipRemove>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </mat-chip>
+                }
+              </mat-chip-set>
+            </mat-card-content>
+          </mat-card>
+        </ng-template>
+        <button [attr.aria-label]="'remove chip'" matChipRemove>
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </mat-chip>
+    }
+    @if (context.items.length < 5) {
+      <span>
+        @for (item of context.items; track item) {
+          <mat-chip (removed)="remove(context.name, item)">
+            {{ getChipLabel(context.name, item) }}
+            <button [attr.aria-label]="'remove chip'" matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        }
+      </span>
+    }
+  </mat-chip-set>
+}

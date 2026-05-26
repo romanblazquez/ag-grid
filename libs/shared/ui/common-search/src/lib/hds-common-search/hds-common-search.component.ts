@@ -35,6 +35,7 @@ import {
   map,
   Observable,
   of,
+  startWith,
   switchMap,
   take,
 } from 'rxjs';
@@ -145,7 +146,16 @@ export class HdsCommonSearchComponent {
     initialValue: this.myControl.value ?? [],
   });
 
+  // Reactive bridge: statusChanges fires whenever setErrors/clearErrors/validators run.
+  // Without this, errorMessage computed would have zero signal dependencies and
+  // cache its initial null value forever, never showing validation errors.
+  private readonly _controlStatus = toSignal(
+    this.myControl.statusChanges.pipe(startWith(this.myControl.status)),
+    { initialValue: this.myControl.status },
+  );
+
   readonly errorMessage = computed(() => {
+    void this._controlStatus(); // establish reactive dependency
     const errs = this.myControl.errors;
     return errs ? (errs['errors'] as string) : null;
   });
@@ -1250,28 +1260,25 @@ export class HdsCommonSearchComponent {
 
   private static readonly SENTINEL_ITEM: AbstractData = {};
   private static readonly EMPTY_SUGGESTIONS: AbstractData[] = [];
-  private lastSuggestions: AbstractData[] =
-    HdsCommonSearchComponent.EMPTY_SUGGESTIONS;
+  private static readonly SENTINEL_SUGGESTIONS: AbstractData[] = [
+    HdsCommonSearchComponent.SENTINEL_ITEM,
+  ];
 
   /**
    * Feed PrimeNG one sentinel item while `panelVisible` is true so its
    * `handleSuggestionsChange` keeps the overlay open. The actual megamenu
    * (grid/tree) renders in the `#footer` template; the `#item` template is
    * an empty `<span>` so the sentinel itself has no visual footprint.
-   * On false→true transitions we return a fresh array reference so PrimeNG
-   * picks the change up via ngOnChanges; while it stays open, the same
-   * reference is returned to avoid retriggering on every CD cycle.
+   *
+   * Using a computed signal ensures the same array reference is returned while
+   * `panelVisible` stays stable — PrimeNG only sees a new reference when the
+   * panel opens or closes, preventing spurious ngOnChanges triggers.
    */
-  get suggestions(): AbstractData[] {
-    if (!this.panelVisible()) {
-      this.lastSuggestions = HdsCommonSearchComponent.EMPTY_SUGGESTIONS;
-      return HdsCommonSearchComponent.EMPTY_SUGGESTIONS;
-    }
-    if (this.lastSuggestions === HdsCommonSearchComponent.EMPTY_SUGGESTIONS) {
-      this.lastSuggestions = [HdsCommonSearchComponent.SENTINEL_ITEM];
-    }
-    return this.lastSuggestions;
-  }
+  readonly suggestions = computed<AbstractData[]>(() =>
+    this.panelVisible()
+      ? HdsCommonSearchComponent.SENTINEL_SUGGESTIONS
+      : HdsCommonSearchComponent.EMPTY_SUGGESTIONS,
+  );
 
   /** Adds an internal hook class on top of any user-provided panel class. */
   readonly resolvedPanelClass = computed(

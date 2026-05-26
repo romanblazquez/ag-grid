@@ -1,0 +1,103 @@
+:host {
+  --td-padding: 1rem 1.5rem;
+}
+
+::ng-deep .cdk-overlay-pane.cancel-dialog-container {
+  border-radius: 24px !important;
+  background: var(--td-bg-card) !important;
+  box-shadow: var(--td-shadow-card) !important;
+  color: var(--td-text-primary) !important;
+  min-width: 400px !important;
+  max-width: 860px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.td-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--td-padding);
+
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 200;
+    margin: 0;
+    color: var(--td-text-primary);
+  }
+}
+
+.td-close-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: var(--td-text-secondary);
+  transition: color 0.2s;
+}
+
+.td-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: var(--td-padding);
+  font-size: 0.95rem;
+  color: var(--td-text-secondary);
+}
+
+.td-error-card {
+  background: var(--td-error-bg);
+  border: 1px solid var(--td-alert);
+  border-radius: 8px;
+  padding: var(--td-padding);
+  margin-bottom: 1rem;
+}
+
+.td-err-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.td-err-icon {
+  font-size: 22px;
+  color: var(--td-error-icon);
+  flex-shrink: 0;
+}
+
+.td-err-title {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--td-text-primary);
+}
+
+.td-error-list {
+  max-height: 160px;
+  overflow-y: auto;
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.td-actions {
+  padding: 1.5rem;
+  border-top: 1px solid var(--td-border);
+  background: var(--td-actions-bg);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+
+  .confirm {
+    background: var(--td-alert-button) !important;
+    color: #ffffff !important;
+    font-weight: 500;
+
+    &:disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.full-width {
+  width: 100%;
+}

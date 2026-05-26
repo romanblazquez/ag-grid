@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { ShellFeature } from './shell-feature';
 
 describe('ShellFeature', () => {
@@ -8,6 +9,7 @@ describe('ShellFeature', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ShellFeature],
+      providers: [provideHttpClient()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ShellFeature);

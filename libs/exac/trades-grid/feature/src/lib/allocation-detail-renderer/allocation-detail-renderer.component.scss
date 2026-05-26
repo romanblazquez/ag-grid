@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+.allocation-detail {
+  display: block;
+  height: 100%;
+  padding: 0 25px 15px 25px;
+  background: var(--ag-background-color);
+}
+
+.allocation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.allocation-title {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.allocation-grid {
+  height: calc(100% - 48px);
+  width: 100%;
+}

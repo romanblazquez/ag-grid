@@ -1,0 +1,91 @@
+@mixin scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--td-accent) transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--td-accent);
+    border-radius: 4px;
+  }
+}
+
+::ng-deep .cdk-overlay-pane {
+  border-radius: 24px !important;
+  background: var(--td-bg-card) !important;
+  box-shadow: var(--td-shadow-card) !important;
+  color: var(--td-text-primary) !important;
+  min-width: 400px !important;
+  max-width: 860px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.td-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 200;
+    margin: 0;
+    color: var(--td-text-primary);
+  }
+}
+
+.td-close-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: var(--td-text-secondary);
+  transition: color 0.2s;
+}
+
+.td-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  font-size: 0.95rem;
+  color: var(--td-text-secondary);
+}
+
+.td-actions {
+  padding: 1.5rem;
+  border-top: 1px solid var(--td-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+
+  .confirm {
+    background: var(--td-alert-button) !important;
+    color: #ffffff !important;
+    font-weight: 500;
+
+    &:disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.full-width {
+  width: 100%;
+  textarea {
+    resize: none;
+    max-height: 120px !important;
+    @include scrollbar;
+  }
+}
+
+.previous-note-card {
+  background: var(--td-bg-preview) !important;
+  border: 1px solid var(--td-border) !important;
+  border-radius: 8px !important;
+  padding: 1rem;
+}

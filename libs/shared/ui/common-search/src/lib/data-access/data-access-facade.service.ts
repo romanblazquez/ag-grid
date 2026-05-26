@@ -27,12 +27,21 @@ import {
  */
 @Injectable({ providedIn: 'root' })
 export class DataAccessFacadeService {
+  private readonly storageKey = 'trade-platform.common-search.iprefs';
+
   private readonly _initialDataPersisted$ = new BehaviorSubject<boolean>(true);
   readonly initialDataPersisted$ = this._initialDataPersisted$.asObservable();
 
-  private readonly preferences = signal<Record<string, unknown>>({});
+  private readonly pendingPreferences = signal<Record<string, unknown[]>>({});
+  private readonly committedPreferences = signal<Record<string, unknown[]>>(
+    this.readCommittedPreferences(),
+  );
 
   private readonly customContexts = new Map<string, Context>();
+
+  constructor() {
+    this.committedPreferences.set(this.readCommittedPreferences());
+  }
 
   // ── Public API ──────────────────────────────────────────────────────
 
@@ -95,7 +104,52 @@ export class DataAccessFacadeService {
     isTreeView: boolean | undefined,
   ): void {
     void isTreeView;
-    this.preferences.update((p) => ({ ...p, [ctx.searchType]: data }));
+    this.pendingPreferences.update((p) => ({ ...p, [ctx.searchType]: data }));
+  }
+
+  getPreference<T>(
+    key: string,
+    dataPool?: T[],
+    filterKey?: keyof T,
+  ): T[] {
+    const preferences = (this.committedPreferences()[key] ?? []) as unknown[];
+    if (!dataPool || filterKey === undefined) {
+      return [...preferences] as T[];
+    }
+
+    const mapped: T[] = [];
+    for (const preference of preferences) {
+      const match = dataPool.find(
+        (item) =>
+          (item as Record<string, unknown>)[filterKey as string] === preference,
+      );
+      if (match) mapped.push(match);
+    }
+    return mapped;
+  }
+
+  stagePreference(key: string, data: unknown[]): void {
+    this.pendingPreferences.update((p) => ({ ...p, [key]: data }));
+  }
+
+  clearPendingPreferences(keys: string[]): void {
+    this.pendingPreferences.update((p) => {
+      const next = { ...p };
+      for (const key of keys) {
+        next[key] = [];
+      }
+      return next;
+    });
+  }
+
+  commitPreferences(): void {
+    const next = {
+      ...this.committedPreferences(),
+      ...this.pendingPreferences(),
+    };
+    this.committedPreferences.set(next);
+    this.writeCommittedPreferences(next);
+    this.pendingPreferences.set({});
   }
 
   // ── Registry-based data fetching (backward compat) ──────────────────
@@ -170,5 +224,50 @@ export class DataAccessFacadeService {
       }
     }
     return out;
+  }
+
+  private readCommittedPreferences(): Record<string, unknown[]> {
+    const storage = this.getSessionStorage();
+    if (!storage) return {};
+
+    try {
+      const raw = storage.getItem(this.storageKey);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      return this.normalizePreferenceMap(parsed);
+    } catch {
+      return {};
+    }
+  }
+
+  private writeCommittedPreferences(
+    preferences: Record<string, unknown[]>,
+  ): void {
+    const storage = this.getSessionStorage();
+    if (!storage) return;
+
+    try {
+      storage.setItem(this.storageKey, JSON.stringify(preferences));
+    } catch {
+      // Ignore storage quota or browser privacy mode failures.
+    }
+  }
+
+  private normalizePreferenceMap(
+    preferences: Record<string, unknown>,
+  ): Record<string, unknown[]> {
+    const next: Record<string, unknown[]> = {};
+    for (const [key, value] of Object.entries(preferences)) {
+      next[key] = Array.isArray(value) ? [...value] : [];
+    }
+    return next;
+  }
+
+  private getSessionStorage(): Storage | undefined {
+    try {
+      return (globalThis as { sessionStorage?: Storage }).sessionStorage;
+    } catch {
+      return undefined;
+    }
   }
 }

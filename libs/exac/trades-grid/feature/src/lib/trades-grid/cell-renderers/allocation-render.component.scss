@@ -1,0 +1,18 @@
+.ag-cell-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.ag-group-expanded {
+  display: inline-block;
+}
+
+.ag-icon {
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ag-group-value {
+  display: inline-block;
+}

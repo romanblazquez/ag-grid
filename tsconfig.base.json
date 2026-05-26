@@ -34,6 +34,45 @@
       ],
       "@trade-platform/trades-search/feature": [
         "libs/trades-search/feature/src/index.ts"
+      ],
+      "@trade-platform/exac/trades-search/data-access": [
+        "libs/exac/trades-search/data-access/src/index.ts"
+      ],
+      "@trade-platform/exac/trades-search/feature": [
+        "libs/exac/trades-search/feature/src/index.ts"
+      ],
+      "@trade-platform/exac/shared/data": [
+        "libs/exac/shared/data/src/index.ts"
+      ],
+      "@trade-platform/exac/shared/ui": [
+        "libs/exac/shared/ui/src/index.ts"
+      ],
+      "@trade-platform/exac/shell-view/feature": [
+        "libs/exac/shell-view/feature/src/index.ts"
+      ],
+      "@trade-platform/exac/trades-grid/data": [
+        "libs/exac/trades-grid/data/src/index.ts"
+      ],
+      "@trade-platform/exac/trades-grid/data-access": [
+        "libs/exac/trades-grid/data-access/src/index.ts"
+      ],
+      "@trade-platform/exac/trades-grid/feature": [
+        "libs/exac/trades-grid/feature/src/index.ts"
+      ],
+      "@trade-platform/shared/ui/selection-chips": [
+        "libs/shared/ui/selection-chips/src/index.ts"
+      ],
+      "@trade-platform/shared/ui/search-bar": [
+        "libs/shared/ui/search-bar/src/index.ts"
+      ],
+      "@trade-platform/shared/ui/suggestible-search": [
+        "libs/shared/ui/suggestible-search/src/index.ts"
+      ],
+      "@trade-platform/shared/ui/vertical-resize": [
+        "libs/shared/ui/vertical-resize/src/index.ts"
+      ],
+      "@trade-platform/shared/ui/grid-view-manager": [
+        "libs/shared/ui/grid-view-manager/src/index.ts"
       ]
     }
   },

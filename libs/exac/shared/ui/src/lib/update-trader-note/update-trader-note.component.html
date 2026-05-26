@@ -1,0 +1,74 @@
+<div class="td-dialog-header">
+  <h2>Update Trader Note{{ isSingleExecution ? '' : 's' }}</h2>
+  <button mat-icon-button class="td-close-x" (click)="onCancel()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+@if (errorMessages.length > 0) {
+  <div class="td-dialog-content">
+    <mat-card class="td-error-card">
+      <div class="td-err-header">
+        <mat-icon class="td-err-icon">error</mat-icon>
+        <span class="td-err-title">Update failed:</span>
+      </div>
+      <ul class="td-error-list">
+        @for (msg of errorMessages; track msg) {
+          <li>{{ msg }}</li>
+        }
+      </ul>
+    </mat-card>
+  </div>
+  <div class="td-actions">
+    <button mat-stroked-button (click)="onCancel()" [disabled]="isProcessing">Close</button>
+  </div>
+} @else {
+  <div class="td-dialog-content" [formGroup]="noteForm">
+    <p>
+      You are about to update trader note for
+      <strong>{{ executionCount }}</strong>
+      execution{{ isSingleExecution ? '' : 's' }}:
+    </p>
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Trader Note</mat-label>
+      <textarea
+        matInput
+        formControlName="traderNote"
+        rows="4"
+        placeholder="Enter trader note..."
+      ></textarea>
+      <mat-hint align="end">
+        {{ noteForm.get('traderNote')?.value?.length || 0 }} / {{ MAX_TRADER_NOTE_LENGTH }}
+      </mat-hint>
+      @if (noteForm.get('traderNote')?.hasError('required')) {
+        <mat-error>Trader note is required</mat-error>
+      }
+      @if (noteForm.get('traderNote')?.hasError('whitespace')) {
+        <mat-error>Trader note cannot be blank or whitespace</mat-error>
+      }
+      @if (noteForm.get('traderNote')?.hasError('maxlength')) {
+        <mat-error>Trader note cannot exceed {{ MAX_TRADER_NOTE_LENGTH }} characters</mat-error>
+      }
+    </mat-form-field>
+    @if (currentNote) {
+      <mat-card class="previous-note-card">
+        <mat-card-title>
+          <mat-icon class="history-icon" aria-label="History">history</mat-icon>
+          <span class="history-title">Previous Note</span>
+        </mat-card-title>
+        <mat-card-content>{{ currentNote }}</mat-card-content>
+      </mat-card>
+    }
+  </div>
+  <div class="td-actions">
+    <button mat-stroked-button (click)="onCancel()" [disabled]="isProcessing">Close</button>
+    <button
+      mat-flat-button
+      (click)="onSubmit()"
+      [disabled]="noteForm.invalid || isProcessing"
+      class="confirm"
+    >
+      {{ isProcessing ? 'Updating...' : 'Update Note' }}
+    </button>
+  </div>
+}

@@ -1,0 +1,13 @@
+@if (isAuthorized()) {
+  <div class="shell-container">
+    <!-- Trades search component goes here (imported by consuming feature) -->
+    <ng-content select="[search]"></ng-content>
+    <!-- Trades grid component goes here -->
+    <ng-content select="[grid]"></ng-content>
+  </div>
+} @else {
+  <div class="unauthorized-container">
+    <h1>Access Denied</h1>
+    <p>You do not have permission to view the Execution Activity UI</p>
+  </div>
+}

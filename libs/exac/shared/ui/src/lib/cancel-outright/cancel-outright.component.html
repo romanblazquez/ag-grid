@@ -1,0 +1,58 @@
+<div class="td-dialog-header">
+  <h2>Cancel {{ getCancelTypeDisplayName() }}s</h2>
+  <button mat-icon-button class="td-close-x" (click)="onCancel()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+@if (cancelErrorMessages.length > 0) {
+  <div class="td-dialog-content">
+    <mat-card class="td-error-card">
+      <div class="td-err-header">
+        <mat-icon class="td-err-icon">error</mat-icon>
+        <span class="td-err-title">Cancellation failed:</span>
+      </div>
+      <ul class="td-error-list">
+        @for (msg of cancelErrorMessages; track msg) {
+          <li>{{ msg }}</li>
+        }
+      </ul>
+    </mat-card>
+  </div>
+  <div class="td-actions">
+    <button mat-stroked-button (click)="onCancel()" [disabled]="isProcessing">Close</button>
+  </div>
+} @else {
+  <div class="td-dialog-content" [formGroup]="cancelForm">
+    <p>
+      You are about to cancel <strong>{{ getTotalItemsCount() }}</strong>
+      {{ getCancelTypeDisplayName() | lowercase }}(s):
+    </p>
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Please select a reason code</mat-label>
+      <mat-select formControlName="reason" required>
+        @for (reason of cancellationReasons; track reason) {
+          <mat-option [value]="reason.code">{{ reason.displayText }}</mat-option>
+        }
+      </mat-select>
+      @if (cancelForm.get('reason')?.hasError('required')) {
+        <mat-error>Reason is required</mat-error>
+      }
+    </mat-form-field>
+    @if (cancelForm.get('reason')?.value === 'OTR') {
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Please enter a description (required for OTR)</mat-label>
+        <input matInput formControlName="customReason" />
+        @if (cancelForm.get('customReason')?.hasError('required')) {
+          <mat-error>Custom reason is required</mat-error>
+        }
+      </mat-form-field>
+    }
+  </div>
+  <div class="td-actions">
+    <button mat-stroked-button (click)="onCancel()" [disabled]="isProcessing">Close</button>
+    <button mat-flat-button (click)="onConfirmCancel()" [disabled]="!canSubmit()" class="confirm">
+      Confirm Cancel
+    </button>
+  </div>
+}

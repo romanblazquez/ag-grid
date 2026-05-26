@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+::ng-deep .darkMode .mat-mdc-standard-chip {
+  --mdc-chip-disabled-label-text-color: #fafafa;
+  --mdc-chip-elevated-container-color: #1b4975;
+  --mdc-chip-elevated-disabled-container-color: #1b4975;
+  --mdc-chip-focus-state-layer-color: white;
+  --mdc-chip-focus-state-layer-opacity: 0.12;
+  --mdc-chip-label-text-color: #fafafa;
+  --mdc-chip-with-icon-icon-color: #fafafa;
+  --mdc-chip-with-icon-disabled-icon-color: #fafafa;
+  --mdc-chip-with-icon-selected-icon-color: #fafafa;
+  --mdc-chip-with-trailing-icon-disabled-trailing-icon-color: #fafafa;
+  --mdc-chip-with-trailing-icon-trailing-icon-color: #fafafa;
+}
+
+::ng-deep .mat-mdc-card-content:last-child {
+  padding-bottom: 0 !important;
+  padding-right: 5px !important;
+}
+
+::ng-deep .mat-mdc-card-content:first-child {
+  padding-top: 0 !important;
+  padding-left: 5px !important;
+}
+
+::ng-deep .mat-mdc-card-content {
+  max-width: 900px;
+}

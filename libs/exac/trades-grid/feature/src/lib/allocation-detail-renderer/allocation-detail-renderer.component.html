@@ -1,0 +1,25 @@
+<section
+  #allocationDetailElem
+  class="allocation-detail"
+  verticalResize
+  (sizeChanged)="handleAllocationsVerticalResize($event)"
+  (edgeDoubleClicked)="handleBottomEdgeDoubleClick()"
+>
+  <div class="allocation-header">
+    <span class="allocation-title">{{ title }}</span>
+    <mat-slide-toggle
+      (change)="allocationsStore.setShowUnallocatedMembers($event.checked)"
+      labelPosition="before"
+    >Show Unallocated Members
+    </mat-slide-toggle>
+  </div>
+  <ag-grid-angular
+    #agGrid
+    class="allocation-grid"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    [gridOptions]="gridOptions"
+    [rowData]="rowData()"
+    (gridReady)="onGridReady($event)"
+  ></ag-grid-angular>
+</section>

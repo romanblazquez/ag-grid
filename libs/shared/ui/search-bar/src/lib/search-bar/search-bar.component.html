@@ -1,0 +1,86 @@
+<mat-form-field [style.width]="searchBarWidth + 'px'">
+  <mat-label>{{ placeholderText }}</mat-label>
+  <input
+    (blur)="onInputBlur()"
+    (focus)="onInputFocus()"
+    (input)="onInputChange($event)"
+    (keydown.Enter)="selectFirstResult()"
+    (keydown.Tab)="selectFirstResult()"
+    [formControl]="searchFormControl"
+    [matAutocomplete]="auto"
+    [readonly]="disabled"
+    data-cy="search-input"
+    matInput
+    type="text"
+  />
+
+  @if (enableClearButton && isInputInFocus && searchFormControl.value) {
+    <mat-icon
+      (mousedown)="clearSearch($event)"
+      class="clear-button"
+      color="primary"
+      data-cy="clear-button"
+      mat-icon-button
+      matSuffix
+    >
+      close
+    </mat-icon>
+  }
+
+  @if (!hideArrowDropDown ? defaultResults && !isInputInFocus : false) {
+    <mat-icon
+      (click)="showDefaultResults($event)"
+      class="default-results"
+      color="primary"
+      data-cy="default-results"
+      mat-icon-button
+      matSuffix
+    >
+      arrow_drop_down
+    </mat-icon>
+  }
+
+  <mat-autocomplete
+    #auto="matAutocomplete"
+    (optionSelected)="selectResult($event)"
+    [displayWith]="displayFunction!"
+    [panelWidth]="dropDownWidth + 'px'"
+    autoActiveFirstOption
+  >
+    @if (canShowResults) {
+      @for (searchResult of searchResults; track searchResult) {
+        <mat-option [value]="searchResult" class="search-results">
+          @for (
+            searchResultColumn of searchResultColumns;
+            track searchResultColumn;
+            let i = $index
+          ) {
+            <div
+              (focus)="onTooltipOpen(searchResultColumnsToolTip![i])"
+              (mouseover)="onTooltipOpen(searchResultColumnsToolTip![i])"
+              [matTooltip]="searchResultColumnsToolTip![i]"
+              [style.width]="searchResultColumnWidths![i] + '%'"
+              class="search-result-column"
+              data-cy="search-results"
+              style="align-content: center"
+            >
+              {{ getSearchResultByColumn(searchResult, searchResultColumn) }}
+            </div>
+          }
+        </mat-option>
+      }
+    }
+  </mat-autocomplete>
+
+  @if (searchFormControl.errors && useMatError) {
+    <mat-error>
+      {{ errorMessage }}
+    </mat-error>
+  }
+</mat-form-field>
+
+@if (errorMessage && !useMatError) {
+  <span class="mat-error error-message">
+    {{ errorMessage }}
+  </span>
+}

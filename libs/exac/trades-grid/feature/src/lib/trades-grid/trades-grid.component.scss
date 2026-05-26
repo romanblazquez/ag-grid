@@ -1,0 +1,33 @@
+.exac-grid-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .trades-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+}
+
+::ng-deep .small-icon-button {
+  margin-top: 3px;
+}
+
+::ng-deep .ag-cell .ag-group-value {
+  padding-left: 0 !important;
+}
+
+::ng-deep .ag-cell .ag-selection-checkbox.ag-invisible {
+  display: none !important;
+}
+
+::ng-deep .ag-cell.not-first-group-col .ag-selection-checkbox {
+  display: none !important;
+}
+
+:host ::ng-deep {
+  .ag-row-level-1 {
+    background-color: var(--ag-background-color) !important;
+  }
+}
