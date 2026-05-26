@@ -310,7 +310,11 @@ export class HdsCommonSearchComponent {
       const trigger = this.triggerSelect();
       if (trigger && !this.disabled()) {
         this.searchQuery.set(trigger);
-        this.onFocusOut();
+        // Mark as focused-out without starting the 1000ms close timer —
+        // onFocusOut() would schedule cancelPendingQuery which wipes state
+        // a second after a programmatic trigger, not the desired behavior.
+        this.isFocusedOut.set(true);
+        this.focused.set(false);
       }
     });
 
@@ -329,41 +333,15 @@ export class HdsCommonSearchComponent {
           if (!ctx) return of([]);
           const searchType = this.searchContext().searchType;
           const dsf = this.searchContext().dataSourceFn;
-          const idf = this.searchContext().initialDataFn;
-
-          const withFallback = (source$: Observable<unknown[]>) =>
-            source$.pipe(
-              switchMap((results) => {
-                const data = (results as AbstractData[]) ?? [];
-                if (data.length > 0) return of(data);
-                return this.dataFacadeService
-                  .getInitialData(ctx, searchType, idf, dsf)
-                  .pipe(
-                    map((initial) =>
-                      Array.isArray(initial) ? (initial as AbstractData[]) : [],
-                    ),
-                    catchError(() => of([] as AbstractData[])),
-                  );
-              }),
-            );
 
           if (ctx.initLoadData) {
             return this.isInitDataReady().pipe(
               switchMap(() =>
-                withFallback(
-                  this.dataFacadeService.getSuggestedData(
-                    ctx,
-                    searchType,
-                    query,
-                    dsf,
-                  ),
-                ),
+                this.dataFacadeService.getSuggestedData(ctx, searchType, query, dsf),
               ),
             );
           }
-          return withFallback(
-            this.dataFacadeService.getSuggestedData(ctx, searchType, query, dsf),
-          );
+          return this.dataFacadeService.getSuggestedData(ctx, searchType, query, dsf);
         }),
         catchError(() => {
           this.myControl.setErrors({
@@ -437,6 +415,10 @@ export class HdsCommonSearchComponent {
 
   onFocusIn(): void {
     if (this.disabled()) return;
+    if (this.focusOutTimer !== null) {
+      clearTimeout(this.focusOutTimer);
+      this.focusOutTimer = null;
+    }
     this.isFocusedOut.set(false);
     this.focused.set(true);
     const ctx = this.serviceContext();
@@ -522,9 +504,10 @@ export class HdsCommonSearchComponent {
     // focus() via setTimeout(0) which triggers onFocusIn → openInitialPanel,
     // re-opening the panel we just closed. The chevron's mousedown.preventDefault
     // already keeps focus stable.
+    // Note: ac.hide() fires PrimeNG's (onHide) synchronously → onPanelHide(),
+    // which handles cancelPendingQuery() and releaseCoordinator(). Do not
+    // duplicate those calls here or they run twice in the same tick.
     ac?.hide?.();
-    this.cancelPendingQuery();
-    this.releaseCoordinator();
   }
 
   /** Close requested by the coordinator (another panel in the same form
@@ -536,9 +519,8 @@ export class HdsCommonSearchComponent {
     const ac = this.autoComplete() as unknown as
       | { hide?: (isFocus?: boolean) => void }
       | undefined;
+    // Same as closePanel: onPanelHide handles cancelPendingQuery + releaseCoordinator.
     ac?.hide?.();
-    this.cancelPendingQuery();
-    this.releaseCoordinator();
   }
 
   private acquireCoordinator(): void {
@@ -619,7 +601,9 @@ export class HdsCommonSearchComponent {
     this.searchQuery.set('');
     this.lastTypedQuery.set('');
     this.searchResults.set([]);
-    this.clearInputBox();
+    // Do NOT clear the DOM input here — that wipes text the user may still need.
+    // clearInputBox() is only appropriate on explicit resets (resetSearch/clearSearch)
+    // and after a confirmed selection.
   }
 
   onPanelMouseDown(event: MouseEvent): void {
