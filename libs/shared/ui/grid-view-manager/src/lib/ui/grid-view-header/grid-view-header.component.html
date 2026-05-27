@@ -1,0 +1,173 @@
+<view-dialog
+  [(visible)]="dialogVisible"
+  [isEditMode]="false"
+  [initialData]="dialogInitialData"
+  (save)="onHeaderDialogSave($event)"
+/>
+
+<header class="gvm-header-bar">
+  <div class="gvm-header-bar__content">
+    <div class="gvm-header-bar__left">
+      <view-dropdown
+        [views]="views()"
+        [defaultViews]="defaultViews()"
+        [currentViewName]="activeView()?.name || ''"
+        (selectView)="onSelectView($event)"
+        (editView)="onEditView($event)"
+        (createView)="onCreateView($event)"
+        (deleteView)="onDeleteView($event)"
+      ></view-dropdown>
+      <div class="gvm-header-bar__button-container">
+        <p-buttongroup>
+          <p-button
+            (click)="resetView()"
+            [disabled]="!isDraft()"
+            [ngClass]="{ 'active-filters': isDraft() }"
+            [rounded]="true"
+            [text]="true"
+            pTooltip="Reset to Saved View"
+            tooltipPosition="top"
+          >
+            <hds-icon [icon]="icons.history" size="xs" slot="icon"></hds-icon>
+          </p-button>
+          @if (!hideIcons().includes(allIcons.SAVE_GRID)) {
+            <p-button
+              (click)="saveView()"
+              [disabled]="!canSave()"
+              [ngClass]="{ 'active-filters': canSave() }"
+              [rounded]="true"
+              [text]="true"
+              pTooltip="Save Current View"
+              tooltipPosition="bottom"
+            >
+              <hds-icon [icon]="icons.save" size="xs" slot="icon"></hds-icon>
+            </p-button>
+          }
+          <p-button
+            (click)="createNewFrom()"
+            [disabled]="!hasUnsavedChanges()"
+            [ngClass]="{ 'active-filters': hasUnsavedChanges() }"
+            [rounded]="true"
+            [text]="true"
+            pTooltip="Create New View"
+          >
+            <hds-icon [icon]="icons.addNew" size="xs" slot="icon"></hds-icon>
+          </p-button>
+        </p-buttongroup>
+      </div>
+      <div class="gvm-header-bar__spinner">
+        @if (isSaving()) {
+          <mat-progress-spinner
+            diameter="24"
+            mode="indeterminate"
+            color="accent"
+          ></mat-progress-spinner>
+        }
+      </div>
+    </div>
+
+    <div class="gvm-header-bar__right">
+      <div class="gvm-header-bar__button-container">
+        <p-buttongroup>
+          @if (!hideIcons().includes(allIcons.EXPORT_DATA)) {
+            <p-button
+              (click)="exportData()"
+              data-testid="export-button"
+              [rounded]="true"
+              [text]="true"
+              pTooltip="Export data"
+              tooltipPosition="left"
+            >
+              <hds-icon [icon]="icons.export" size="xs" slot="icon"></hds-icon>
+            </p-button>
+          }
+          @if (!hideIcons().includes(allIcons.CLEAR_FILTERS)) {
+            <p-button
+              (click)="clearAllFilters()"
+              [ngClass]="{ 'icon-active': isFiltersActive() }"
+              [disabled]="clearFiltersDisabled()"
+              [rounded]="true"
+              [text]="true"
+              pTooltip="Clear Filters"
+              tooltipPosition="bottom"
+              ariaLabel="Clear all filters"
+            >
+              @if (isFiltersActive()) {
+                <hds-icon
+                  [icon]="icons.filterFilled"
+                  size="xs"
+                  slot="icon"
+                ></hds-icon>
+              } @else {
+                <hds-icon
+                  [icon]="icons.filterUnfilled"
+                  size="xs"
+                  slot="icon"
+                ></hds-icon>
+              }
+            </p-button>
+          }
+          @if (!hideIcons().includes(allIcons.REMOVE_SORT)) {
+            <p-button
+              (click)="removeAllSorting()"
+              [ngClass]="{ 'icon-active': isSortingApplied() }"
+              [disabled]="removeSortDisabled()"
+              [rounded]="true"
+              [text]="true"
+              pTooltip="Clear Sorting"
+              tooltipPosition="bottom"
+              ariaLabel="Clear all sorting"
+            >
+              @if (isSortingApplied()) {
+                <hds-icon
+                  [icon]="icons.sortOrdered"
+                  size="xs"
+                  slot="icon"
+                ></hds-icon>
+              } @else {
+                <hds-icon
+                  [icon]="icons.sortUnordered"
+                  size="xs"
+                  slot="icon"
+                ></hds-icon>
+              }
+            </p-button>
+          }
+          @if (!hideIcons().includes(allIcons.EXPAND_COLLAPSE)) {
+            @if (showExpandAll()) {
+              <p-button
+                (click)="expandAll()"
+                [rounded]="true"
+                [text]="true"
+                pTooltip="Expand All"
+              >
+                <hds-icon
+                  [icon]="icons.expandAll"
+                  size="xs"
+                  slot="icon"
+                ></hds-icon>
+              </p-button>
+            } @else {
+              <p-button
+                (click)="collapseAll()"
+                [rounded]="true"
+                [text]="true"
+                pTooltip="Collapse All"
+              >
+                <hds-icon
+                  [icon]="icons.collapseAll"
+                  size="xs"
+                  slot="icon"
+                ></hds-icon>
+              </p-button>
+            }
+          }
+        </p-buttongroup>
+      </div>
+      <div class="gvm-header-bar__divider"></div>
+      <span class="gvm-header-bar__timestamp">{{
+        lastUpdatedTimestamp()
+      }}</span>
+    </div>
+  </div>
+</header>

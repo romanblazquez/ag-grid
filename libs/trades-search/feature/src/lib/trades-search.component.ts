@@ -11,17 +11,19 @@ import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { DividerModule } from 'primeng/divider';
 import {
-  BrokerService,
-  CodeValueService,
   DataAccessFacadeService,
   CommonSearchValue,
   HdsCommonSearchComponent,
-  PersonSearchService,
-  PortfolioService,
   SearchContext,
   SearchType,
-  SecurityService,
   TreeNode,
+} from '@trade-platform/shared/ui/hds-common-search';
+import {
+  BrokerService,
+  CodeValueService,
+  PersonSearchService,
+  PortfolioService,
+  SecurityService,
 } from '@trade-platform/shared/ui/common-search';
 import {
   DatePickerComponent,

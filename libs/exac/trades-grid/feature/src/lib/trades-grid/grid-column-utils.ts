@@ -18,7 +18,7 @@ const commonColDef: ColDef = {
   lockPinned: true,
   suppressMovable: true,
   suppressSizeToFit: true,
-  suppressCellFlash: true,
+  enableCellChangeFlash: false,
   resizable: false,
   filter: false,
   suppressColumnsToolPanel: false,

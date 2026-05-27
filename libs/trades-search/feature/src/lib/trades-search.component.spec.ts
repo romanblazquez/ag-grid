@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   DataAccessFacadeService,
   SearchType,
-} from '@trade-platform/shared/ui/common-search';
+} from '@trade-platform/shared/ui/hds-common-search';
 import { TradesSearchComponent } from './trades-search.component';
 import { TradesSearchFacadeService } from '@trade-platform/exac/trades-search/data-access';
 

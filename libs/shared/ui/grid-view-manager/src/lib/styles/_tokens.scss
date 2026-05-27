@@ -1,0 +1,40 @@
+// Grid View Manager - Tokens Only (Variables & Mixins - No CSS Output)
+// Safe to import in component SCSS files without duplicating CSS
+
+// Spacing Variables
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// Color tokens — reference PrimeNG semantic tokens so SCSS-compiled
+// component styles automatically react to theme class changes at runtime.
+$color-background-secondary: var(--p-content-background);
+$color-text-primary: var(--p-text-color);
+$color-text-secondary: var(--p-text-muted-color);
+$color-accent: var(--p-primary-color);
+
+// Font Size Variables
+$font-size-sm: 0.875rem;
+$font-size-md: 1rem;
+$font-size-lg: 1.25rem;
+$font-size-xl: 1.5rem;
+
+// Font Weight Variables
+$font-weight-normal: 400;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Font Family Variables
+$font-family-base: 'Helvetica Neue', sans-serif;
+
+// Layout Variables
+$side-padding: var(--side-padding, 12px);
+
+// Mixins
+@mixin gvm-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,8 +1,7 @@
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, map, Observable, of, tap } from 'rxjs';
-import { DataAccessFacadeService } from '../data-access-facade.service';
-import { TreeNode } from '../../model/tree-node.model';
+import { DataAccessFacadeService, TreeNode } from '@trade-platform/shared/ui/hds-common-search';
 import { SearchService } from './search.service';
 
 export const CODEVALUE_SERVICE_URL = new InjectionToken<string>(

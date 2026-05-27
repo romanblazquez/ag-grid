@@ -1,0 +1,219 @@
+@use '../../../../styles/tokens' as *;
+
+grid-view-header {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.gvm-header-bar {
+  border-radius: 4px 4px 0 0;
+  border: 2px solid $color-background-secondary;
+  border-bottom: none;
+  background: $color-background-secondary;
+  width: 100%;
+}
+
+.gvm-header-bar__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gvm-header-bar__left {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 300px;
+}
+.gvm-header-bar__spinner {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.gvm-header-bar__right {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+  min-width: 250px;
+}
+
+.gvm-header-bar__button-container {
+  background: var(--p-content-hover-background);
+  border-radius: 22px;
+  padding: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  min-width: 2rem;
+
+  p-buttongroup {
+    display: flex;
+    height: 100%;
+    width: 100%;
+
+    .p-buttongroup {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      gap: 0;
+    }
+
+    .p-button {
+      flex: 1;
+      min-width: 2.4rem;
+      height: 2.4rem;
+      justify-content: center;
+      align-items: center;
+      border: none;
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      margin: 0;
+      box-shadow: none;
+      outline: none;
+      transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: var(--p-content-hover-background);
+        border: none;
+        box-shadow: none;
+      }
+
+      &:focus,
+      &:focus-visible,
+      &:active {
+        border: none;
+        box-shadow: none;
+        outline: none;
+      }
+
+      &.active-filters {
+        background: rgba(150, 133, 40, 0.2);
+
+        hds-icon {
+          color: #968528;
+        }
+      }
+
+      &.icon-active {
+        hds-icon {
+          color: #968528;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+
+        hds-icon {
+          color: var(--p-text-muted-color);
+        }
+      }
+
+      hds-icon {
+        color: var(--p-text-color);
+        transition: color 0.2s ease;
+      }
+
+      .p-button-label {
+        display: none;
+      }
+
+      > * {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    .p-button:first-child {
+      border-top-left-radius: 22px;
+      border-bottom-left-radius: 22px;
+    }
+
+    .p-button:last-child {
+      border-top-right-radius: 22px;
+      border-bottom-right-radius: 22px;
+    }
+
+    .p-button:only-child {
+      border-radius: 22px;
+    }
+  }
+}
+
+.gvm-header-bar__divider {
+  width: 1px;
+  height: 1.5rem;
+  background-color: var(--p-content-border-color);
+  margin-left: 8px;
+  display: block;
+  position: relative;
+}
+
+.gvm-header-bar__timestamp {
+  font-family: $font-family-base;
+  padding: 0.5rem;
+  background: $color-background-secondary;
+  color: $color-text-primary;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.25px;
+  white-space: nowrap;
+}
+
+@media (max-width: 812px) {
+  .gvm-header-bar__left,
+  .gvm-header-bar__right {
+    flex: 1 1 100%;
+  }
+
+  .gvm-header-bar__right {
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+  }
+
+  .gvm-header-bar__content {
+    gap: 0.25rem;
+  }
+
+  .gvm-header-bar__button-container {
+    gap: 0.125rem;
+  }
+
+  .gvm-header-bar__divider {
+    display: none;
+  }
+
+  .gvm-header-bar__timestamp {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gvm-header-bar__left,
+  .gvm-header-bar__right {
+    flex: 1 1 100%;
+  }
+
+  .gvm-header-bar__right {
+    justify-content: space-between;
+  }
+}

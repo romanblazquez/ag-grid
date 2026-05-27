@@ -1,0 +1,77 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeOnEscape]="true"
+  [style]="{ width: '360px' }"
+  (onHide)="onCancel()"
+>
+  <ng-template #header>
+    <span class="view-dialog__title">{{ dialogHeader }}</span>
+  </ng-template>
+
+  <div class="view-dialog__content" [formGroup]="viewForm">
+    @if (errorMessages && errorMessages.length > 0) {
+      <div class="view-dialog__errors">
+        <p-message severity="error" [text]="'Operation failed:'" />
+        <ul class="view-dialog__error-list">
+          @for (msg of errorMessages; track msg) {
+            <li>{{ msg }}</li>
+          }
+        </ul>
+      </div>
+    } @else {
+      <p-floatlabel variant="on" class="view-dialog__field">
+        <input
+          pInputText
+          id="view-name"
+          formControlName="name"
+          maxlength="50"
+          class="view-dialog__input"
+        />
+        <label for="view-name">View Name</label>
+      </p-floatlabel>
+      @if (
+        viewForm.get('name')?.touched &&
+        viewForm.get('name')?.hasError('required')
+      ) {
+        <small class="view-dialog__error-msg">Name is required</small>
+      }
+      @if (
+        viewForm.get('name')?.touched &&
+        viewForm.get('name')?.hasError('maxlength')
+      ) {
+        <small class="view-dialog__error-msg"
+          >Name must be at most 50 characters</small
+        >
+      }
+    }
+  </div>
+
+  <ng-template #footer>
+    @if (errorMessages && errorMessages.length > 0) {
+      <p-button
+        label="Close"
+        severity="secondary"
+        [text]="true"
+        [disabled]="isProcessing"
+        (click)="onCancel()"
+      />
+    } @else {
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        [disabled]="isProcessing"
+        (click)="onCancel()"
+      />
+      <p-button
+        [label]="isEditMode ? 'Save' : 'Create View'"
+        [disabled]="!viewForm.valid || isProcessing"
+        (click)="onSave()"
+      />
+    }
+  </ng-template>
+</p-dialog>

@@ -1,0 +1,4 @@
+// Grid View Manager Shared SCSS Entry
+// Forwards tokens (variables & mixins — no CSS output).
+// All theming is handled by PrimeNG semantic tokens (--p-*) via the consuming app.
+@forward 'tokens';

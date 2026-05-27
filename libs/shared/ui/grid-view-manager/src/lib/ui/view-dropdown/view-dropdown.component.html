@@ -1,0 +1,94 @@
+<p-confirmdialog />
+
+<view-dialog
+  [(visible)]="dialogVisible"
+  [isEditMode]="dialogEditMode"
+  [initialData]="dialogInitialData"
+  (save)="onDialogSave($event)"
+  (cancelDialog)="onDialogCancel()"
+/>
+
+<div class="gvm-dropdown" cdkOverlayOrigin #dropdownOrigin="cdkOverlayOrigin">
+  <button
+    class="gvm-dropdown__trigger"
+    (click)="togglePanel()"
+    [class.gvm-dropdown__trigger--open]="panelOpen"
+  >
+    <span class="gvm-dropdown__label">{{ currentViewName }}</span>
+    <hds-icon
+      [icon]="chevronDownIcon"
+      size="xs"
+      class="gvm-dropdown__icon"
+    ></hds-icon>
+  </button>
+</div>
+
+<ng-template
+  cdk-connected-overlay
+  [cdkConnectedOverlayOrigin]="dropdownOrigin"
+  [cdkConnectedOverlayOpen]="panelOpen"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  [cdkConnectedOverlayBackdropClass]="'gvm-dropdown__backdrop'"
+  [cdkConnectedOverlayPositions]="overlayPositions"
+  (backdropClick)="closePanel()"
+  (detach)="closePanel()"
+>
+  <div class="gvm-dropdown__panel">
+    <div
+      *ngFor="let view of filteredViews"
+      class="gvm-dropdown__row"
+      [class.gvm-dropdown__row--system]="view.isSystemDefault"
+      (click)="selectAndClose(view.name)"
+    >
+      <div class="gvm-dropdown__row-main">
+        <span class="gvm-dropdown__row-label">{{ view.name }}</span>
+        <hds-icon
+          *ngIf="view.isSystemDefault"
+          [icon]="lockIcon"
+          size="xs"
+          class="gvm-dropdown__system-icon"
+          pTooltip="System default - Copy to customize"
+        ></hds-icon>
+      </div>
+      <button
+        *ngIf="!view.isDefault"
+        class="gvm-dropdown__meatballs"
+        (click)="$event.stopPropagation(); openMenu(view, $event)"
+      >
+        <hds-icon [icon]="moreIcon" size="xs"></hds-icon>
+      </button>
+      <div
+        *ngIf="activeMenuView === view.name"
+        class="gvm-dropdown__meatballs-menu"
+        [class.gvm-dropdown__meatballs-menu--left]="menuPosition === 'left'"
+        [class.gvm-dropdown__meatballs-menu--right]="menuPosition === 'right'"
+      >
+        <button (click)="$event.stopPropagation(); copyExistingView(view.id)">
+          <hds-icon [icon]="copyIcon" size="xs"></hds-icon> Copy
+        </button>
+        <button
+          *ngIf="!view.isSystemDefault"
+          (click)="$event.stopPropagation(); editExistingView(view.id)"
+        >
+          <hds-icon [icon]="editIcon" size="xs"></hds-icon> Edit
+        </button>
+        <button
+          *ngIf="!view.isSystemDefault"
+          (click)="$event.stopPropagation(); deleteExistingView(view)"
+          class="gvm-dropdown__delete"
+        >
+          <hds-icon [icon]="deleteIcon" size="xs"></hds-icon> Delete
+        </button>
+      </div>
+    </div>
+    <hr class="gvm-dropdown__divider" />
+    <button class="gvm-dropdown__create" (click)="createAndClose()">
+      <hds-icon
+        [icon]="addIcon"
+        size="xs"
+        class="gvm-dropdown__create-icon"
+      ></hds-icon>
+      <span>Create New View</span>
+    </button>
+  </div>
+</ng-template>

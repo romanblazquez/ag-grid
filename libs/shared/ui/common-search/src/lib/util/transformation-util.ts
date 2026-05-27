@@ -1,6 +1,4 @@
-import { Context } from '../model/search-context.model';
-import { AbstractData } from '../model/search-result.model';
-import { Item, TreeNode } from '../model/tree-node.model';
+import { Context, AbstractData, Item, TreeNode } from '@trade-platform/shared/ui/hds-common-search';
 
 export interface Broker {
   id: string;

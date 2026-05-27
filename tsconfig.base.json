@@ -24,6 +24,9 @@
       "@trade-platform/shared/ui/common-search": [
         "libs/shared/ui/common-search/src/index.ts"
       ],
+      "@trade-platform/shared/ui/hds-common-search": [
+        "libs/shared/ui/hds-common-search/src/index.ts"
+      ],
       "@trade-platform/shared/ui/date-picker": [
         "libs/shared/ui/date-picker/src/index.ts"
       ],

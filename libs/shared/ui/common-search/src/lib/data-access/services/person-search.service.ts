@@ -1,10 +1,9 @@
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, map, Observable, of, tap } from 'rxjs';
-import { AbstractData } from '../../model/search-result.model';
+import { AbstractData, DataAccessFacadeService } from '@trade-platform/shared/ui/hds-common-search';
 import { SearchService } from './search.service';
 import { bestMatchSortFn } from '../../util/sorting-util';
-import { DataAccessFacadeService } from '../data-access-facade.service';
 
 export const PERSON_SERVICE_URL = new InjectionToken<string>(
   'PERSON_SERVICE_URL',

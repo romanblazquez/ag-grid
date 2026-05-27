@@ -13,5 +13,3 @@ export enum ExecutionsGridConstants {
   PreferencesFailureSnackbar = 'There was an error updating preferences. Please contact the help desk for more information.',
 }
 
-/** InjectionToken key — trade activity service base URL */
-export const TRADE_ACTIVITY_SERVICE_URL = 'TRADE_ACTIVITY_SERVICE_URL';
