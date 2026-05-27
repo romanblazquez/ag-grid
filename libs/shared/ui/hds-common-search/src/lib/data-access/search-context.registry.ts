@@ -15,7 +15,6 @@ export const SEARCH_CONTEXT_REGISTRY: Record<string, Context> = {
     searchType: SearchType.Symbol,
     placeholder: 'Symbol / CUSIP',
     emitField: 'cusip',
-    initLoadData: true,
     detailFields: [
       { name: 'symbol', visible: true },
       { name: 'cusip', visible: true },
@@ -32,7 +31,6 @@ export const SEARCH_CONTEXT_REGISTRY: Record<string, Context> = {
     searchType: SearchType.FundPm,
     placeholder: 'Fund',
     emitField: 'fundNumber',
-    initLoadData: true,
     detailFields: [
       { name: 'shortName', visible: true },
       { name: 'fundNumber', visible: true },
@@ -50,7 +48,6 @@ export const SEARCH_CONTEXT_REGISTRY: Record<string, Context> = {
     placeholder: 'Broker',
     emitField: 'firmSourceId',
     chipDisplayField: 'firmCode',
-    initLoadData: true,
     detailFields: [
       { name: 'firmName', visible: true },
       { name: 'firmCode', visible: true },
@@ -67,7 +64,6 @@ export const SEARCH_CONTEXT_REGISTRY: Record<string, Context> = {
     placeholder: 'Trader',
     emitField: 'personSourceId',
     chipDisplayField: 'desk',
-    initLoadData: true,
     detailFields: [
       { name: 'fullName', visible: true },
       { name: 'desk', visible: true },
@@ -84,7 +80,6 @@ export const SEARCH_CONTEXT_REGISTRY: Record<string, Context> = {
     placeholder: 'Instrument Type',
     emitField: 'code',
     chipDisplayField: 'code',
-    initLoadData: true,
     detailFields: [
       { name: 'description', visible: true },
       { name: 'code', visible: true },
