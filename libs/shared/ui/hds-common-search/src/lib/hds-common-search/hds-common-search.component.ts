@@ -343,6 +343,15 @@ export class HdsCommonSearchComponent {
       }
     });
 
+    // Skip the chip remove icon in tab navigation — chips are removable via
+    // the X button but we don't want it stealing focus during keyboard tab
+    // traversal of the form. PrimeNG renders the chips internally so the
+    // tabindex must be applied via DOM after each chip change.
+    effect(() => {
+      this.chipsValue(); // dependency
+      queueMicrotask(() => this.setChipRemoveTabindex());
+    });
+
     toObservable(this.searchQuery)
       .pipe(
         distinctUntilChanged(),
@@ -1172,6 +1181,22 @@ export class HdsCommonSearchComponent {
       host?.querySelector<HTMLInputElement>('input.p-autocomplete-input') ??
       null
     );
+  }
+
+  /** Set tabindex=-1 on PrimeNG's per-chip remove icons so keyboard tab
+   * navigation skips them — chips are still removable via mouse click
+   * or the Backspace key on the input. */
+  private setChipRemoveTabindex(): void {
+    const ac = this.autoComplete() as unknown as
+      | { el?: ElementRef }
+      | undefined;
+    const host = ac?.el?.nativeElement as HTMLElement | undefined;
+    if (!host) return;
+    host
+      .querySelectorAll<HTMLElement>('.p-autocomplete-chip-icon')
+      .forEach((el) => {
+        el.tabIndex = -1;
+      });
   }
 
   private readInputText(): string {

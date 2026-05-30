@@ -107,17 +107,38 @@
 
       <!-- Summary overlay only when chips exceed maxVisibleChips. Individual
            chips render inline via PrimeNG's native chip slot inside the input
-           row, so the typing input naturally shifts right as chips appear. -->
+           row, so the typing input naturally shifts right as chips appear.
+           The integrated × button clears ALL chips when in summary mode. -->
       @if (showAsSummary() && !csvMode()) {
         <span
           class="hds-summary-chip"
           [pTooltip]="overflowTooltip()"
           tooltipPosition="top"
           (dblclick)="onChipsDblClick()"
-        >{{ summaryLabel() }}</span>
+        >
+          <span class="hds-summary-chip-label">{{ summaryLabel() }}</span>
+          @if (showClear()) {
+            <span
+              class="hds-summary-chip-remove pi pi-times"
+              role="button"
+              tabindex="-1"
+              [attr.aria-label]="'Clear all'"
+              (mousedown)="$event.preventDefault()"
+              (click)="clearSearch(); $event.stopPropagation()"
+            ></span>
+          }
+        </span>
       }
 
-      @if (showClear() && chipsValue().length > 1 && !csvMode()) {
+      <!-- Clear-all button shown only when individual chips are visible (not
+           in summary mode). In summary mode, the × on the summary chip itself
+           handles clear-all. -->
+      @if (
+        showClear() &&
+        chipsValue().length > 1 &&
+        !showAsSummary() &&
+        !csvMode()
+      ) {
         <button
           type="button"
           class="hds-search-clear-button"

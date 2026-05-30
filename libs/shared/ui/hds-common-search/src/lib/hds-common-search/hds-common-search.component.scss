@@ -189,7 +189,8 @@
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
-  padding: 0.125rem 0.625rem;
+  gap: 0.25rem;
+  padding: 0.125rem 0.25rem 0.125rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
@@ -198,6 +199,25 @@
   color: var(--p-chip-color, var(--p-surface-700));
   cursor: pointer;
   z-index: 1;
+}
+
+.hds-summary-chip-label {
+  // visual-only span to anchor the label distinct from the remove icon
+}
+
+.hds-summary-chip-remove {
+  font-size: 0.625rem;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0.125rem;
+  border-radius: 50%;
+  transition: opacity 0.15s, background-color 0.15s;
+  outline: none;
+
+  &:hover {
+    opacity: 1;
+    background: var(--p-surface-200);
+  }
 }
 
 
