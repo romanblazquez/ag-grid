@@ -1,5 +1,18 @@
 :host {
   display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+// Force p-tree to fit within the panel — its default min-content sizing
+// expands to fit the widest node label, which made the overlay grow past
+// the trigger width and PrimeNG flip-positioned it horizontally.
+::ng-deep .hds-tree.p-tree,
+::ng-deep .hds-tree .p-tree {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden;
 }
 
 ::ng-deep .hds-tree {

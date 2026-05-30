@@ -169,15 +169,25 @@ export class HdsCommonSearchComponent {
     () => this.serviceContext()?.placeholder ?? '',
   );
 
+  /** Measured width of the autocomplete trigger element in px — updated each
+   * time the panel opens. Used to pin the overlay panel width to the input. */
+  private readonly triggerWidth = signal<number>(0);
+
   readonly panelStyle = computed<Record<string, string>>(() => {
     const style: Record<string, string> = {};
+    // Consumer-provided sizing wins if given.
     const minW = this.panelMinWidth() ?? this.minWidth();
     const maxW = this.panelMaxWidth() ?? this.maxWidth();
     if (minW) style['min-width'] = minW;
     if (maxW) style['max-width'] = maxW;
-    if (!minW && !maxW) {
-      style['width'] = (this.serviceContext()?.panelWidth ?? 300) + 'px';
-    }
+    // Otherwise pin both min-width AND max-width to the trigger's measured
+    // width. PrimeNG anchors the overlay at the trigger's left edge — letting
+    // the panel grow wider (e.g. p-tree's min-content layout in tree views)
+    // overflows into adjacent inputs and trips PrimeNG's viewport-overflow
+    // flip, shifting the panel off the trigger.
+    const tw = this.triggerWidth();
+    if (!minW && tw > 0) style['min-width'] = tw + 'px';
+    if (!maxW && tw > 0) style['max-width'] = tw + 'px';
     return style;
   });
 
@@ -461,9 +471,24 @@ export class HdsCommonSearchComponent {
     // empty suggestions and bailed (the panel never opened on first focus
     // with no iprefs).
     setTimeout(() => {
+      this.measureTriggerWidth();
       const ac = this.autoComplete();
       (ac as unknown as { show?: () => void } | undefined)?.show?.();
     }, 0);
+  }
+
+  /** Read the autocomplete container's current pixel width and push it into
+   * the triggerWidth signal so panelStyle can pin the overlay to match. */
+  private measureTriggerWidth(): void {
+    const ac = this.autoComplete() as unknown as
+      | { el?: ElementRef<HTMLElement> }
+      | undefined;
+    const host = ac?.el?.nativeElement;
+    if (!host) return;
+    const width = host.getBoundingClientRect().width;
+    if (width > 0 && width !== this.triggerWidth()) {
+      this.triggerWidth.set(width);
+    }
   }
 
   onFocusOut(event?: Event): void {

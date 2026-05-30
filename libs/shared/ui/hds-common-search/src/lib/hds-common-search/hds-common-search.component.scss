@@ -220,6 +220,28 @@
   display: none;
 }
 
+/* Force the overlay wrapper to anchor at the autocomplete's left edge.
+   The panel hierarchy is:
+     p-autocomplete > p-overlay > div.p-overlay > div.p-overlay-content > div.hds-megamenu-overlay
+   PrimeNG positions p-overlay (the Angular host) via CDK; for tree views
+   that positioning anchors to the wrong reference. Hard-pin it here. */
+:host ::ng-deep .hds-search-autocomplete > p-overlay,
+:host ::ng-deep .p-autocomplete > p-overlay {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  top: 100% !important;
+  margin-top: 2px;
+  z-index: 1000;
+  display: block;
+}
+
+:host ::ng-deep .hds-search-autocomplete > p-overlay > div,
+:host ::ng-deep .p-autocomplete > p-overlay > div {
+  position: static !important;
+  transform: none !important;
+}
+
 /* CSV-copy mode: hide the chip pills so only the plain-text CSV is visible
    in the input. The input stretches full-width for easy selection. */
 ::ng-deep .hds-csv-mode {
