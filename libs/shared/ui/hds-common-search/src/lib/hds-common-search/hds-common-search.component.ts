@@ -714,7 +714,17 @@ export class HdsCommonSearchComponent {
 
     const isComma = event.key === ',';
     const isTab = event.key === 'Tab' && !event.shiftKey;
+    const isShiftTab = event.key === 'Tab' && event.shiftKey;
     const isEnter = event.key === 'Enter';
+
+    // Tab-out (forward or backward) takes focus to another control.
+    // Reset chip scroll immediately so we don't depend on the blur
+    // handler's timing — the user sees chips snap back to start as
+    // they tab away.
+    if (isTab || isShiftTab) {
+      queueMicrotask(() => this.resetChipScroll());
+    }
+
     if (!isComma && !isTab && !isEnter) return;
 
     const text = this.readInputText();
