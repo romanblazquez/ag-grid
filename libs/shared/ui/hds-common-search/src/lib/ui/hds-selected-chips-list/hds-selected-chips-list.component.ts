@@ -15,7 +15,7 @@ import { AbstractData } from '../../model/search-result.model';
 import { DetailField } from '../../model/search-context.model';
 
 @Component({
-  selector: 'fmr-pr000539-hds-selected-chips-list',
+  selector: 'lib-hds-selected-chips-list',
   templateUrl: './hds-selected-chips-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CheckboxModule, FormsModule, NgStyle],

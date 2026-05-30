@@ -17,6 +17,8 @@ import {
   DataAccessFacadeService,
   CommonSearchValue,
   HdsCommonSearchComponent,
+  IPREFS_STORE,
+  LEGACY_DATA_ACCESS_FACADE,
   SearchContext,
   SearchType,
   TreeNode,
@@ -71,6 +73,11 @@ import { IprefsService } from '@trade-platform/shared/data-access';
     TeamSearchService,
     TraderTeamSearchService,
     { provide: SharedPersonServiceToken, useExisting: PersonDirectoryService },
+    // Bridge the project-specific services into hds-common-search via its
+    // optional InjectionTokens. The HDS facade reads from these to enable
+    // legacy data-source fallback and localStorage-backed iprefs.
+    { provide: LEGACY_DATA_ACCESS_FACADE, useExisting: LegacyDataAccessFacadeService },
+    { provide: IPREFS_STORE, useExisting: IprefsService },
   ],
 })
 export class TradesSearchComponent implements OnInit {

@@ -1,21 +1,42 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Context } from '../model/search-context.model';
-import { SearchContext } from '../model/search-context.model';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { Context, SearchContext } from '../model/search-context.model';
 import { SearchDataSourceFn, SearchInitialDataFn } from '../model/search-data-source.model';
 import { AbstractData } from '../model/search-result.model';
 import { TreeNode } from '../model/tree-node.model';
-import { LegacyDataAccessFacadeService } from '@trade-platform/shared/ui/common-search';
-import { IprefsService } from '@trade-platform/shared/data-access';
+import {
+  IPREFS_STORE,
+  LEGACY_DATA_ACCESS_FACADE,
+} from './external-services.tokens';
 import { SEARCH_CONTEXT_REGISTRY } from './search-context.registry';
 
+/**
+ * Data-access facade for hds-common-search.
+ *
+ * Fully standalone: when no external services are provided, the facade
+ * operates purely on the consumer-supplied `dataSourceFn` / `initialDataFn`
+ * callbacks on the SearchContext.
+ *
+ * Optional integrations (wire via InjectionTokens):
+ *  - `LEGACY_DATA_ACCESS_FACADE`: bridge to a service-based data layer
+ *    (e.g. the project's `DataAccessFacadeService` in common-search) for
+ *    consumers that prefer registry-driven configuration over per-context
+ *    callbacks.
+ *  - `IPREFS_STORE`: persist user selections (iprefs) to localStorage or
+ *    a remote store. Mirrors writes from `setPreference()`.
+ */
 @Injectable()
 export class DataAccessFacadeService {
-  private readonly legacy = inject(LegacyDataAccessFacadeService);
-  private readonly iprefs = inject(IprefsService);
+  private readonly legacy = inject(LEGACY_DATA_ACCESS_FACADE, {
+    optional: true,
+  });
+  private readonly iprefs = inject(IPREFS_STORE, { optional: true });
   private readonly customContexts = new Map<string, Context>();
 
-  readonly initialDataPersisted$ = this.legacy.initialDataPersisted$.asObservable();
+  /** Mirror the legacy `initialDataPersisted$` if available; otherwise emit
+   * a static `true` so consumers depending on it never hang. */
+  readonly initialDataPersisted$: Observable<boolean> =
+    this.legacy?.initialDataPersisted$.asObservable() ?? of(true);
 
   registerContext(key: string, context: Context): void {
     this.customContexts.set(key, context);
@@ -23,9 +44,9 @@ export class DataAccessFacadeService {
 
   getServiceContext(searchType: string): Context {
     if (this.customContexts.has(searchType)) {
-      return this.customContexts.get(searchType)!;
+      return this.customContexts.get(searchType) as Context;
     }
-    const legacyCtx = this.legacy.getServiceContext(searchType as any) ?? {};
+    const legacyCtx = this.legacy?.getServiceContext(searchType) ?? {};
     const registryCtx = SEARCH_CONTEXT_REGISTRY[searchType] ?? {};
     return { ...registryCtx, ...legacyCtx } as Context;
   }
@@ -36,11 +57,12 @@ export class DataAccessFacadeService {
     query: string,
     dataSourceFn?: SearchDataSourceFn,
   ): Observable<AbstractData[] | TreeNode[]> {
-    if (dataSourceFn) {
-      return dataSourceFn(query);
+    if (dataSourceFn) return dataSourceFn(query);
+    if (this.legacy) {
+      const legacyCtx = this.legacy.getServiceContext(searchType);
+      return this.legacy.getSuggestedData(legacyCtx, searchType, query);
     }
-    const legacyCtx = this.legacy.getServiceContext(searchType as any);
-    return this.legacy.getSuggestedData(legacyCtx, searchType as any, query);
+    return of([]);
   }
 
   getInitialData(
@@ -49,22 +71,21 @@ export class DataAccessFacadeService {
     initialDataFn?: SearchInitialDataFn,
     dataSourceFn?: SearchDataSourceFn,
   ): Observable<AbstractData[] | TreeNode[]> {
-    if (initialDataFn) {
-      return initialDataFn();
+    if (initialDataFn) return initialDataFn();
+    if (dataSourceFn) return dataSourceFn('');
+    if (this.legacy) {
+      const legacyCtx = this.legacy.getServiceContext(searchType);
+      return this.legacy.getInitialData(legacyCtx, searchType);
     }
-    if (dataSourceFn) {
-      return dataSourceFn('');
-    }
-    const legacyCtx = this.legacy.getServiceContext(searchType as any);
-    return this.legacy.getInitialData(legacyCtx, searchType as any);
+    return of([]);
   }
 
-  loadInitialData(ctx: SearchContext): Observable<any> {
-    return this.legacy.loadInitialData(ctx as any);
+  loadInitialData(ctx: SearchContext): Observable<unknown> {
+    return this.legacy?.loadInitialData(ctx) ?? of(true);
   }
 
   loadPreferences(ctx: SearchContext): void {
-    this.legacy.loadPreferences(ctx as any);
+    this.legacy?.loadPreferences(ctx);
   }
 
   setPreference(
@@ -72,9 +93,9 @@ export class DataAccessFacadeService {
     data: unknown[],
     isTreeView: boolean | undefined,
   ): void {
-    this.legacy.setPreference(ctx as any, data, isTreeView);
-    // Mirror to IprefsService → persists to localStorage so iprefs survive
-    // page refresh. The consumer's `initialDataFn` reads from the same store.
-    this.iprefs.set(ctx.searchType, data);
+    this.legacy?.setPreference(ctx, data, isTreeView);
+    // Mirror to the iprefs store if provided — typically backed by
+    // localStorage so selections survive page refresh.
+    this.iprefs?.set(ctx.searchType, data);
   }
 }
