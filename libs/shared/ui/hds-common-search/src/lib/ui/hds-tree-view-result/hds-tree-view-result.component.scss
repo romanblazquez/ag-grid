@@ -5,17 +5,23 @@
   overflow: hidden;
 }
 
+// All ::ng-deep rules below are scoped under :host so the emulated
+// encapsulation attribute on the host element prefixes the selector,
+// raising specificity. This defends against global stylesheets that
+// target the same .hds-* class names (e.g. an external HDS design
+// system CSS imported into the project).
+
 // Force p-tree to fit within the panel — its default min-content sizing
 // expands to fit the widest node label, which made the overlay grow past
 // the trigger width and PrimeNG flip-positioned it horizontally.
-::ng-deep .hds-tree.p-tree,
-::ng-deep .hds-tree .p-tree {
+:host ::ng-deep .hds-tree.p-tree,
+:host ::ng-deep .hds-tree .p-tree {
   width: 100% !important;
   max-width: 100% !important;
   overflow-x: hidden;
 }
 
-::ng-deep .hds-tree {
+:host ::ng-deep .hds-tree {
   .p-tree {
     background: transparent;
     padding: 0;

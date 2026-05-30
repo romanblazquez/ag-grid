@@ -229,13 +229,20 @@
 }
 
 
-::ng-deep .hds-ac-error {
+/* All ::ng-deep rules below are scoped under :host so the emulated
+   encapsulation attribute on the host element prefixes the selector,
+   raising specificity. This defends against global stylesheets that
+   target the same .hds-* class names (e.g. an external HDS design
+   system CSS imported into the project). Without :host, these would
+   compile as bare class selectors that lose specificity battles. */
+
+:host ::ng-deep .hds-ac-error {
   margin-top: 0.25rem;
   display: block;
   font-size: 0.75rem;
 }
 
-::ng-deep .hds-common-search__panel {
+:host ::ng-deep .hds-common-search__panel {
   min-width: 280px;
 }
 
@@ -244,7 +251,7 @@
    only holds a hidden sentinel `<li>` (used to keep PrimeNG's overlay open).
    The container's padding/min-height still produces a ~1px line, sometimes
    visible during open/close transitions — drop it entirely. */
-::ng-deep .hds-megamenu-overlay .p-autocomplete-list-container {
+:host ::ng-deep .hds-megamenu-overlay .p-autocomplete-list-container {
   display: none;
 }
 
@@ -272,7 +279,7 @@
 
 /* CSV-copy mode: hide the chip pills so only the plain-text CSV is visible
    in the input. The input stretches full-width for easy selection. */
-::ng-deep .hds-csv-mode {
+:host ::ng-deep .hds-csv-mode {
   .p-autocomplete-chip-item {
     display: none !important;
   }
