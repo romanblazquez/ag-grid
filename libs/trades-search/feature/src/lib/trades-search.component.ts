@@ -7,6 +7,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { map } from 'rxjs';
 import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -92,7 +93,13 @@ export class TradesSearchComponent implements OnInit {
 
   readonly brokerSearchContext: SearchContext = {
     searchType: SearchType.Broker,
-    initialDataFn: () => this.iprefs.get$<TreeNode>(SearchType.Broker),
+    // Iprefs for tree views are stored as flat records (from the tree's
+    // selection emit), so wrap each as a single-leaf TreeNode for the
+    // tree-view-result component, which expects TreeNode[] shape.
+    initialDataFn: () =>
+      this.iprefs
+        .get$<Record<string, unknown>>(SearchType.Broker)
+        .pipe(map((items) => items.map((i) => this.toLeafTreeNode(i)))),
   };
 
   readonly traderSearchContext: SearchContext = {
@@ -102,7 +109,10 @@ export class TradesSearchComponent implements OnInit {
 
   readonly instrumentTypeSearchContext: SearchContext = {
     searchType: SearchType.InstrumentType,
-    initialDataFn: () => this.iprefs.get$<TreeNode>(SearchType.InstrumentType),
+    initialDataFn: () =>
+      this.iprefs
+        .get$<Record<string, unknown>>(SearchType.InstrumentType)
+        .pipe(map((items) => items.map((i) => this.toLeafTreeNode(i)))),
     disableRules: {
       tree: (node: TreeNode) => {
         const item = node.items[0];
@@ -211,5 +221,18 @@ export class TradesSearchComponent implements OnInit {
 
   private toNumbers(values: CommonSearchValue[]): number[] {
     return values.map(Number).filter(Number.isFinite);
+  }
+
+  /** Wrap a flat iprefs record as a single-leaf TreeNode so the tree-view
+   * result component can render it. Keys → items with name+value. */
+  private toLeafTreeNode(record: Record<string, unknown>): TreeNode {
+    return {
+      header: false,
+      items: Object.entries(record).map(([name, value]) => ({
+        name,
+        value: value as string | number,
+        visible: true,
+      })),
+    };
   }
 }
