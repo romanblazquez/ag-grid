@@ -107,6 +107,138 @@ providers: [
 
 `setPreference()` writes to this store on every confirmed selection. Your `initialDataFn` can read from the same store to render iprefs on focus.
 
+## Adapter examples
+
+### NgRx-backed `IprefsStore` adapter
+
+If your app uses NgRx Store, you can back the iprefs token with an NgRx feature state. The HDS facade only needs `set<T>(key, items)` and `get<T>(key)` — the rest of NgRx's API stays inside your app.
+
+```ts
+// iprefs.actions.ts
+import { createAction, props } from '@ngrx/store';
+export const iprefsSet = createAction(
+  '[Iprefs] Set',
+  props<{ key: string; items: unknown[] }>(),
+);
+
+// iprefs.reducer.ts
+import { createReducer, on } from '@ngrx/store';
+import { iprefsSet } from './iprefs.actions';
+export interface IprefsState {
+  byKey: Record<string, unknown[]>;
+}
+const initial: IprefsState = { byKey: {} };
+export const iprefsReducer = createReducer(
+  initial,
+  on(iprefsSet, (state, { key, items }) => ({
+    ...state,
+    byKey: { ...state.byKey, [key]: items.slice(0, 5) },
+  })),
+);
+
+// iprefs.selectors.ts
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { IprefsState } from './iprefs.reducer';
+export const selectIprefs = createFeatureSelector<IprefsState>('iprefs');
+export const selectIprefsByKey = (key: string) =>
+  createSelector(selectIprefs, (s) => s.byKey[key] ?? []);
+
+// iprefs-store.adapter.ts  ← the HDS-facing adapter
+import { Injectable, inject } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { IprefsStore } from '@your-org/hds-common-search';
+import { iprefsSet } from './iprefs.actions';
+import { selectIprefsByKey } from './iprefs.selectors';
+
+@Injectable({ providedIn: 'root' })
+export class NgrxIprefsStore implements IprefsStore {
+  private readonly store = inject(Store);
+  // Local cache so .get() can be synchronous (HDS facade calls it sync).
+  private readonly cache = new Map<string, unknown[]>();
+
+  set<T>(key: string, items: T[]): void {
+    this.cache.set(key, items);
+    this.store.dispatch(iprefsSet({ key, items }));
+  }
+
+  get<T>(key: string): T[] {
+    // Sync read from cache; the store is the source of truth for writes.
+    return (this.cache.get(key) ?? []) as T[];
+  }
+}
+
+// app.config.ts
+providers: [
+  provideStore({ iprefs: iprefsReducer }),
+  { provide: IPREFS_STORE, useExisting: NgrxIprefsStore },
+],
+```
+
+For reactive consumption inside the host app (separate from HDS), use the selectors normally:
+
+```ts
+private readonly recentSymbols$ = this.store.select(selectIprefsByKey('Symbol'));
+```
+
+And to wire `initialDataFn` against the NgRx-backed iprefs without bypassing the store:
+
+```ts
+readonly symbolSearchContext: SearchContext = {
+  searchType: SearchType.Symbol,
+  initialDataFn: () => this.store.select(selectIprefsByKey('Symbol'))
+    .pipe(take(1)) as Observable<AbstractData[]>,
+};
+```
+
+### NgRx-backed `LEGACY_DATA_ACCESS_FACADE` adapter
+
+If your app already has NgRx-backed search APIs (typical pattern: action → effect → HTTP → reducer), wrap them in a `LegacyDataAccessFacade` adapter:
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class NgrxSearchFacade implements LegacyDataAccessFacade {
+  readonly initialDataPersisted$ = new BehaviorSubject<boolean>(true);
+  private readonly store = inject(Store);
+
+  getServiceContext(searchType: string) {
+    // Return your registry context, or undefined to fall back to the
+    // HDS internal SEARCH_CONTEXT_REGISTRY.
+    return undefined;
+  }
+
+  getSuggestedData(_ctx: Context | undefined, searchType: string, query: string) {
+    // Dispatch a search action; the effect will fetch and populate state.
+    this.store.dispatch(searchActions.query({ searchType, query }));
+    return this.store.select(selectResults(searchType)).pipe(
+      filter((r) => r != null),
+      take(1),
+    );
+  }
+
+  getInitialData(_ctx: Context | undefined, searchType: string) {
+    return this.store.select(selectIprefsByKey(searchType)).pipe(take(1));
+  }
+
+  loadInitialData(_ctx: SearchContext) {
+    return of(true);
+  }
+
+  loadPreferences(_ctx: SearchContext) {
+    /* no-op or dispatch a load action */
+  }
+
+  setPreference(ctx: SearchContext, data: unknown[]) {
+    this.store.dispatch(iprefsSet({ key: ctx.searchType, items: data }));
+  }
+}
+
+providers: [
+  { provide: LEGACY_DATA_ACCESS_FACADE, useExisting: NgrxSearchFacade },
+],
+```
+
+The HDS facade calls this whenever `dataSourceFn` / `initialDataFn` are absent on a `SearchContext`. For typical NgRx apps, this is the cleanest way to keep all search state in your store while still using HDS as a presentation component.
+
 ## Component inputs
 
 | Input | Type | Default | Notes |
