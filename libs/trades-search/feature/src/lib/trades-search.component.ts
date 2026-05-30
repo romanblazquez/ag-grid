@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  OnInit,
   signal,
   viewChild,
 } from '@angular/core';
@@ -11,6 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { DividerModule } from 'primeng/divider';
 import {
+  AbstractData,
   DataAccessFacadeService,
   CommonSearchValue,
   HdsCommonSearchComponent,
@@ -39,6 +41,7 @@ import {
   TradesSearchFacadeService,
   getInteractionTypeFromEvent,
 } from '@trade-platform/exac/trades-search/data-access';
+import { IprefsService } from '@trade-platform/shared/data-access';
 
 @Component({
   selector: 'lib-trades-search',
@@ -69,25 +72,37 @@ import {
     { provide: SharedPersonServiceToken, useExisting: PersonDirectoryService },
   ],
 })
-export class TradesSearchComponent {
+export class TradesSearchComponent implements OnInit {
   private readonly tradesSearchFacade = inject(TradesSearchFacadeService);
+  private readonly legacyFacade = inject(LegacyDataAccessFacadeService);
+  private readonly iprefs = inject(IprefsService);
 
   readonly formGroup = new FormGroup({});
 
+  // ── Search contexts ───────────────────────────────────────────────────────
+  // Option 1 wired here: `initialDataFn` returns the iprefs for this type
+  // via the signals-based IprefsService (persists to localStorage).
+  // The HDS facade short-circuits to this callback, bypassing the legacy
+  // preference store entirely.
+
   readonly symbolSearchContext: SearchContext = {
     searchType: SearchType.Symbol,
+    initialDataFn: () => this.iprefs.get$<AbstractData>(SearchType.Symbol),
   };
 
   readonly brokerSearchContext: SearchContext = {
     searchType: SearchType.Broker,
+    initialDataFn: () => this.iprefs.get$<TreeNode>(SearchType.Broker),
   };
 
   readonly traderSearchContext: SearchContext = {
     searchType: SearchType.Trader,
+    initialDataFn: () => this.iprefs.get$<AbstractData>(SearchType.Trader),
   };
 
   readonly instrumentTypeSearchContext: SearchContext = {
     searchType: SearchType.InstrumentType,
+    initialDataFn: () => this.iprefs.get$<TreeNode>(SearchType.InstrumentType),
     disableRules: {
       tree: (node: TreeNode) => {
         const item = node.items[0];
@@ -100,8 +115,31 @@ export class TradesSearchComponent {
   readonly fundSearchContext = computed<SearchContext | null>(() =>
     this.tradesSearchFacade.isExecutionsContext()
       ? null
-      : { searchType: SearchType.FundPm },
+      : {
+          searchType: SearchType.FundPm,
+          initialDataFn: () => this.iprefs.get$<AbstractData>(SearchType.FundPm),
+        },
   );
+
+  /**
+   * Option 2 wired here: also seed the legacy preference store at bootstrap.
+   * Belt-and-suspenders: if any future SearchContext drops `initialDataFn`,
+   * the HDS facade falls back through the legacy chain and finds these.
+   * For real iprefs, the IprefsService persists across reloads automatically.
+   */
+  ngOnInit(): void {
+    for (const type of [
+      SearchType.Symbol,
+      SearchType.FundPm,
+      SearchType.Broker,
+      SearchType.Trader,
+    ]) {
+      const saved = this.iprefs.get(type);
+      if (saved.length > 0) {
+        this.legacyFacade.setPreference({ searchType: type }, saved, false);
+      }
+    }
+  }
 
   // ── UI state ───────────────────────────────────────────────────────────────
   readonly dateError = signal('');

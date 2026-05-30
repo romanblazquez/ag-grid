@@ -15,6 +15,7 @@ export const externalServices: Record<SearchType, Context> = {
       { name: 'longName', visible: true },
     ],
     emitField: 'fundNumber',
+    multiselect: true,
     isTreeView: false,
     fieldWidths: {
       shortName: 20,
@@ -158,7 +159,7 @@ export const externalServices: Record<SearchType, Context> = {
   },
   Trader: {
     apiNames: [ApiName.GetTraders],
-    initLoadData: true,
+    initLoadData: false,
     showAll: true,
     detailFields: [
       { name: 'initials', visible: true },

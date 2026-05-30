@@ -1,16 +1,18 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { Context } from '../model/search-context.model';
 import { SearchContext } from '../model/search-context.model';
 import { SearchDataSourceFn, SearchInitialDataFn } from '../model/search-data-source.model';
 import { AbstractData } from '../model/search-result.model';
 import { TreeNode } from '../model/tree-node.model';
 import { LegacyDataAccessFacadeService } from '@trade-platform/shared/ui/common-search';
+import { IprefsService } from '@trade-platform/shared/data-access';
 import { SEARCH_CONTEXT_REGISTRY } from './search-context.registry';
 
 @Injectable()
 export class DataAccessFacadeService {
   private readonly legacy = inject(LegacyDataAccessFacadeService);
+  private readonly iprefs = inject(IprefsService);
   private readonly customContexts = new Map<string, Context>();
 
   readonly initialDataPersisted$ = this.legacy.initialDataPersisted$.asObservable();
@@ -71,5 +73,8 @@ export class DataAccessFacadeService {
     isTreeView: boolean | undefined,
   ): void {
     this.legacy.setPreference(ctx as any, data, isTreeView);
+    // Mirror to IprefsService → persists to localStorage so iprefs survive
+    // page refresh. The consumer's `initialDataFn` reads from the same store.
+    this.iprefs.set(ctx.searchType, data);
   }
 }
