@@ -452,7 +452,14 @@ export class HdsCommonSearchComponent {
     // Track the live input value so labelRaised stays correct even after
     // blur cleanup wipes lastTypedQuery.
     this.inputValue.set(query);
-    if (query.length > 0) this.lastTypedQuery.set(query);
+    if (query.length > 0) {
+      this.lastTypedQuery.set(query);
+      // Reactive to typing: if the input is squeezed, scroll chips left
+      // immediately so the user has typing room — same action as focus,
+      // no waiting for re-focus. The helper is a no-op when input is
+      // already ≥ 50% of the container.
+      queueMicrotask(() => this.maybeScrollChipsForInput());
+    }
     if (query.length === 0 && this.dropdown()) {
       this.openInitialPanel();
       return;
@@ -480,6 +487,11 @@ export class HdsCommonSearchComponent {
 
     if (this.searchResults().length > 0) this.showPanel();
     else this.openInitialPanel();
+
+    // If chips have squeezed the input below 50% of the container width,
+    // scroll the chip area to the left so the user has typing space.
+    // One-shot on focus — does not race with PrimeNG's chip animations.
+    queueMicrotask(() => this.maybeScrollChipsForInput());
   }
 
   focusInput(): void {
@@ -528,6 +540,9 @@ export class HdsCommonSearchComponent {
     }
     this.isFocusedOut.set(true);
     this.focused.set(false);
+    // Restore chip scroll to start so chips are visible from the left when
+    // the input isn't focused. Symmetric with the focus-time scroll-left.
+    queueMicrotask(() => this.resetChipScroll());
     if (this.focusOutTimer !== null) clearTimeout(this.focusOutTimer);
     // 200ms is enough to capture click-on-suggestion blur→focus race while
     // feeling responsive on real blurs. 1000ms (old default) made the input
@@ -1214,6 +1229,50 @@ export class HdsCommonSearchComponent {
       .forEach((el) => {
         el.tabIndex = -1;
       });
+  }
+
+  /**
+   * Called on focus. If the last <li> (the typing input chip) has been
+   * squeezed below 50% of the chip container's width by accumulated chips,
+   * scroll the container to the left by half its width so the input has
+   * room to type. One-shot — only on focus, never on chip changes.
+   */
+  private maybeScrollChipsForInput(): void {
+    const ac = this.autoComplete() as unknown as
+      | { el?: ElementRef }
+      | undefined;
+    const host = ac?.el?.nativeElement as HTMLElement | undefined;
+    if (!host) return;
+    const container = host.querySelector<HTMLElement>(
+      '.p-autocomplete-input-multiple',
+    );
+    const inputChip = container?.querySelector<HTMLElement>(
+      '.p-autocomplete-input-chip',
+    );
+    if (!container || !inputChip) return;
+
+    const containerWidth = container.offsetWidth;
+    const inputWidth = inputChip.offsetWidth;
+    const threshold = containerWidth * 0.5;
+
+    if (inputWidth < threshold) {
+      container.scrollLeft = containerWidth * 0.5;
+    }
+  }
+
+  /** Called on blur. Restore chip scroll to 0 so chips are visible from
+   * the left edge when the input isn't focused. */
+  private resetChipScroll(): void {
+    const ac = this.autoComplete() as unknown as
+      | { el?: ElementRef }
+      | undefined;
+    const host = ac?.el?.nativeElement as HTMLElement | undefined;
+    if (!host) return;
+    const container = host.querySelector<HTMLElement>(
+      '.p-autocomplete-input-multiple',
+    );
+    if (!container) return;
+    container.scrollLeft = 0;
   }
 
   private readInputText(): string {

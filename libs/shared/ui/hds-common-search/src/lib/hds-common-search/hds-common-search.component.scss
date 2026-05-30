@@ -44,10 +44,25 @@
 
     .p-autocomplete-input-multiple {
       flex-wrap: nowrap;
-      overflow: hidden;
+      // Horizontal scroll instead of clipping. On focus, the component
+      // measures the input chip and, if it's been squeezed below 50% of
+      // the container width, programmatically scrolls left to free up
+      // typing room (see onFocusIn → maybeScrollChipsForInput).
+      overflow-x: auto;
+      overflow-y: hidden;
+      // Hide native scrollbar — UX is focus-triggered auto-scroll + drag,
+      // no thumb shown.
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
       align-items: center;
       padding-inline-start: 0.5rem;
-      padding-inline-end: 1.5rem;
+      // Reserve room for the absolute-positioned .hds-search-clear-button
+      // (~24px wide, sits at right: 2.25rem) so typing doesn't run under
+      // it. The chevron lives OUTSIDE the autocomplete in its own flex
+      // slot — no reservation needed for it here.
+      padding-inline-end: 3rem;
       display: flex;
     }
 
@@ -125,11 +140,15 @@
       }
     }
 
-    // Typing input — collapses when chips are present so the chips and the
-    // clear/chevron buttons own the row. Grows to fill when no chips exist.
+    // Typing input — reserves at least 50% of the chip container so the
+    // user always has typing space. When chips fill the remaining half,
+    // total content exceeds 100% and the container overflows horizontally
+    // (overflow-x: auto on .p-autocomplete-input-multiple). The focus
+    // handler then scrolls the container so chips overflow to the LEFT
+    // and the input stays visible on the RIGHT.
     .p-autocomplete-input-chip {
-      flex: 1 1 0;
-      min-width: 0;
+      flex: 1 0 50%;
+      min-width: 50%;
 
       input {
         min-width: 0;
