@@ -350,14 +350,10 @@ export class HdsCommonSearchComponent {
           if (!ctx) return of([]);
           const searchType = this.searchContext().searchType;
           const dsf = this.searchContext().dataSourceFn;
-
-          if (ctx.initLoadData) {
-            return this.isInitDataReady().pipe(
-              switchMap(() =>
-                this.dataFacadeService.getSuggestedData(ctx, searchType, query, dsf),
-              ),
-            );
-          }
+          // No isInitDataReady gate — services that pre-load (BrokersService,
+          // PersonSearchService) handle their own cache miss inside search().
+          // Gating here caused typed queries to wait for the initial HTTP and
+          // race with debounce, producing the "only Enter triggers search" bug.
           return this.dataFacadeService.getSuggestedData(ctx, searchType, query, dsf);
         }),
         catchError(() => {
@@ -433,6 +429,12 @@ export class HdsCommonSearchComponent {
     this.searchQuery.set(query);
   }
 
+  /**
+   * Focus opens the panel. Same flow as `toggleDropdown`:
+   * - cached results → show them
+   * - empty → load iprefs (initial data) and show
+   * Consistent regardless of how the input got focus (tab, click, label click).
+   */
   onFocusIn(): void {
     if (this.disabled()) return;
     if (this.focusOutTimer !== null) {
@@ -445,7 +447,7 @@ export class HdsCommonSearchComponent {
     if (!ctx) return;
 
     if (this.searchResults().length > 0) this.showPanel();
-    else if (this.searchQuery() === '') this.openInitialPanel();
+    else this.openInitialPanel();
   }
 
   focusInput(): void {
@@ -454,10 +456,14 @@ export class HdsCommonSearchComponent {
   }
 
   private openPanel(): void {
-    queueMicrotask(() => {
+    // setTimeout(0) — runs AFTER Angular CD propagates the new sentinel
+    // suggestion to PrimeNG. queueMicrotask ran BEFORE CD, so PrimeNG saw
+    // empty suggestions and bailed (the panel never opened on first focus
+    // with no iprefs).
+    setTimeout(() => {
       const ac = this.autoComplete();
       (ac as unknown as { show?: () => void } | undefined)?.show?.();
-    });
+    }, 0);
   }
 
   onFocusOut(event?: Event): void {
@@ -579,6 +585,11 @@ export class HdsCommonSearchComponent {
     this.loadInitialResults();
   }
 
+  /**
+   * Load iprefs (preference-backed initial results) and open the panel.
+   * Always opens — even if iprefs returns empty — so the user sees a
+   * consistent panel state (the grid/tree handles the "no results" view).
+   */
   private loadInitialResults(): void {
     const ctx = this.serviceContext();
     if (!ctx || this.disabled()) return;
@@ -587,11 +598,11 @@ export class HdsCommonSearchComponent {
     this.dataFacadeService
       .getInitialData(ctx, sCtx.searchType, sCtx.initialDataFn, sCtx.dataSourceFn)
       .pipe(
-        filter((d): d is AbstractData[] => Array.isArray(d) && d.length > 0),
+        map((d) => (Array.isArray(d) ? (d as AbstractData[]) : [])),
         take(1),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((d: AbstractData[]) => {
+      .subscribe((d) => {
         this.searchResults.set(d);
         this.stopAutoCompleteLoading();
         this.showPanel();
@@ -871,9 +882,7 @@ export class HdsCommonSearchComponent {
       return forkJoin(queries$);
     };
 
-    const source$ = ctx.initLoadData
-      ? this.isInitDataReady().pipe(switchMap(() => buildQueries()))
-      : buildQueries();
+    const source$ = buildQueries();
 
     source$
       .pipe(take(1), takeUntilDestroyed(this.destroyRef))

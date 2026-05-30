@@ -22,6 +22,18 @@
   (removed)="chipRemoved.emit($event)"
 />
 
+@if (resultCount() === 0 && preSelected().length === 0) {
+  <div
+    class="px-3 py-4 text-sm text-surface-500 dark:text-surface-400 text-center"
+  >
+    @if (query()) {
+      No matches for "{{ query() }}"
+    } @else {
+      Start typing to search
+    }
+  </div>
+}
+
 @if (resultCount() > 0) {
   <div
     class="hds-results-divider border-t border-b border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs text-surface-600 dark:text-surface-300 shrink-0 sticky top-6 z-10 bg-surface-0 dark:bg-surface-950"
