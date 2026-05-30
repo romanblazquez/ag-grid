@@ -33,9 +33,11 @@ import {
   first,
   forkJoin,
   map,
+  merge,
   Observable,
   of,
   startWith,
+  Subject,
   switchMap,
   take,
 } from 'rxjs';
@@ -270,6 +272,10 @@ export class HdsCommonSearchComponent {
   );
 
   private readonly searchQuery = signal<string>('');
+  /** Immediate-fire trigger for Enter / explicit submit — bypasses the
+   * typing debounce. Subscribers see the new query and the switchMap
+   * cancels any in-flight debounced search. */
+  private readonly immediateSearch$ = new Subject<string>();
 
   private readonly autoComplete = viewChild<AutoComplete>('commonSearch');
   private readonly gridResult =
@@ -352,12 +358,19 @@ export class HdsCommonSearchComponent {
       queueMicrotask(() => this.setChipRemoveTabindex());
     });
 
-    toObservable(this.searchQuery)
+    // Two sources merge into one search pipeline:
+    //  • Debounced typing stream — fires 150ms after the user stops typing.
+    //  • Immediate Enter stream — fires synchronously when the user submits.
+    // switchMap further down cancels any in-flight prior search so the
+    // user always sees results from the freshest query.
+    const typed$ = toObservable(this.searchQuery).pipe(
+      distinctUntilChanged(),
+      // 150ms is the sweet spot — fast enough to feel responsive,
+      // slow enough to avoid firing on every keystroke.
+      debounceTime(150),
+    );
+    merge(typed$, this.immediateSearch$.asObservable())
       .pipe(
-        distinctUntilChanged(),
-        // 150ms is the sweet spot — fast enough to feel responsive,
-        // slow enough to avoid firing on every keystroke.
-        debounceTime(150),
         // Always require a non-empty query — the empty-input path is owned
         // by `openInitialPanel` (chevron / focus). Without this, callers
         // that pass `minLengthForInputValue=0` would let toObservable's
@@ -713,6 +726,11 @@ export class HdsCommonSearchComponent {
     this.resolveAndAddTokens([text], prev);
   }
 
+  /**
+   * Enter / explicit-submit path. Fires the search immediately, bypassing
+   * the 150ms typing debounce. If a debounced search is still pending for
+   * a different query, the switchMap in the search pipeline cancels it.
+   */
   private submitInputQuery(query: string): void {
     this.lastTypedQuery.set(query);
     if (query.length < this.minLengthForInputValue()) return;
@@ -722,12 +740,11 @@ export class HdsCommonSearchComponent {
     this.panelVisible.set(true);
     this.openPanel();
 
-    if (this.searchQuery() === query) {
-      if (this.searchResults().length > 0) this.showPanel();
-      return;
-    }
-
+    // Keep searchQuery in sync so the debounced stream's distinctUntilChanged
+    // doesn't re-fire the same query 150ms later.
     this.searchQuery.set(query);
+    // Fire NOW via the immediate stream — bypasses debounceTime entirely.
+    this.immediateSearch$.next(query);
   }
 
   onInputPaste(event: ClipboardEvent): void {

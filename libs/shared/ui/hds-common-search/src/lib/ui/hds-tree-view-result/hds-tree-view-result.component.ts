@@ -130,7 +130,12 @@ export class HdsTreeViewResultComponent {
       });
     });
 
-    // Update disabled state and sync selection when preSelected changes
+    // Sync selectedNodes to MIRROR preSelected exactly when it changes.
+    // preSelected is the source of truth from the parent (chips list); when
+    // a chip is removed there, this effect must DROP the corresponding tree
+    // node from selectedNodes, not just add new ones. The previous version
+    // unioned currentLeaves ∪ matchedLeaves which only added — removed
+    // chips left their checkbox stuck checked.
     effect(() => {
       const pre = this.preSelected();
       const emitKey = untracked(() => this.emitField());
@@ -140,21 +145,21 @@ export class HdsTreeViewResultComponent {
       const preKeys = new Set(pre.map((d) => d[emitKey] as string));
       this.updateDisabledState(nodes, preKeys, emitKey, disable);
 
+      // Build the EXACT leaf set from preSelected (no merging with current).
+      const matchedLeaves: PrimeTreeNode[] = [];
       if (preKeys.size > 0) {
-        const matchedLeaves: PrimeTreeNode[] = [];
         this.valueToNodeMap.forEach((node) => {
           if (node.children?.length) return;
           const d = node.data as Record<string, unknown> | undefined;
           if (d && preKeys.has(d[emitKey] as string))
             matchedLeaves.push(node);
         });
-        const currentLeaves = untracked(() => this.selectedNodes()).filter(
-          (n) => !n.children?.length,
-        );
-        const merged = new Set([...currentLeaves, ...matchedLeaves]);
-        const reconciled = this.reconcileSelection(nodes, merged);
-        untracked(() => this.selectedNodes.set(reconciled));
       }
+      const reconciled = this.reconcileSelection(
+        nodes,
+        new Set(matchedLeaves),
+      );
+      untracked(() => this.selectedNodes.set(reconciled));
     });
 
     effect(() => {
