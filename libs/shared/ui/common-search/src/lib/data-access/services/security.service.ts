@@ -1,83 +1,54 @@
-import { inject, Injectable, InjectionToken } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { ApiName, ServiceConfig } from '../../model/service-config.model';
+import { Context } from '../../model/context.model';
+import { svcConfig } from '../../model/external-services.constant';
+import { mergeMap, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable, of } from 'rxjs';
-import { AbstractData, DataAccessFacadeService } from '@trade-platform/shared/ui/hds-common-search';
+import { map } from 'rxjs/operators';
+import { AbstractData } from '../../model/solr-response.model';
 import { SearchService } from './search.service';
-import { bestMatchSortFn } from '../../util/sorting-util';
-
-export const SECURITY_SERVICE_URL = new InjectionToken<string>(
-  'SECURITY_SERVICE_URL',
-);
-
-export interface SecurityData {
-  symbol: string;
-  cusip: string;
-  description: string;
-  [key: string]: unknown;
-}
-
-interface SecurityResponse {
-  docs: SecurityData[];
-}
+import { PreferenceService } from './preference.service';
 
 @Injectable()
-export class SecurityService extends SearchService<SecurityData> {
-  private readonly http = inject(HttpClient);
-  private readonly url = inject(SECURITY_SERVICE_URL, { optional: true });
-  private readonly dataCache = inject(DataAccessFacadeService);
+export class SecurityService extends SearchService<any> {
+  public apiRecord: Record<ApiName, ServiceConfig> = svcConfig;
 
-  search(query: string): Observable<SecurityData[]> {
-    if (!this.url) return of([]);
-    const encoded = encodeURIComponent(query.trim());
-    return this.http
-      .get<SecurityResponse>(`${this.url}?q=${encoded}`)
-      .pipe(
-        map((res) =>
-          (res.docs ?? []).sort(
-            bestMatchSortFn(query, (s) => s.symbol),
-          ),
-        ),
-      );
+  public constructor(
+    private readonly httpClient: HttpClient,
+    private readonly preferenceService: PreferenceService,
+  ) {
+    super();
   }
 
-  loadInitialData(): Observable<unknown> {
-    return of([]);
-  }
-
-  getInitialData(): Observable<SecurityData[]> {
-    const cachedValues = this.dataCache.getPreference<unknown>('symbol');
-    if (!cachedValues.length) {
-      return this.search('');
-    }
-
-    return this.search('').pipe(
-      map((rows) =>
-        this.dataCache.getPreference<SecurityData>('symbol', rows, 'cusip'),
-      ),
+  public search(query: string, serviceContext: Context): Observable<any[]> {
+    return this.apiRecord.GetSecurities.url.pipe(
+      mergeMap((baseUrl) => {
+        const url = baseUrl.replace(/{query}/g, encodeURIComponent(query));
+        return this.httpClient.get<{ docs?: AbstractData[] }>(url);
+      }),
+      map((res) => (res.docs ?? []).map((d) => this.normalize(d))),
     );
   }
 
-  toDataSourceFn() {
-    return (query: string): Observable<AbstractData[]> =>
-      query ? this.search(query) : this.getInitialData();
+  /** Map mock-server fields to the registry's expected field names. */
+  private normalize(d: AbstractData): AbstractData {
+    return {
+      ...d,
+      ticker: (d['ticker'] ?? d['symbol']) as string,
+      issueCUSIP: (d['issueCUSIP'] ?? d['cusip']) as string,
+      bloombergId2: (d['bloombergId2'] ?? d['symbol']) as string,
+      longName: (d['longName'] ?? d['description']) as string,
+    };
   }
 
-  private fetchWithQuery(
-    baseUrl: string,
-    query: string,
-  ): Observable<SecurityData[]> {
-    const fields = ['ticker', 'issueCUSIP', 'longName'];
-    const terms = query.replace(/\s/g, '').split(',');
-    const parts: string[] = [];
-    fields.forEach((field) => {
-      terms.forEach((term) => {
-        const txt = term.startsWith('*') ? `\\${term}` : term;
-        parts.push(`(${field}:${encodeURIComponent(txt)})`);
-      });
-    });
-    const queryUrl = `${baseUrl}?q=${parts.join('+OR+')}`;
-    return this.http
-      .get<SecurityResponse>(queryUrl)
-      .pipe(map((res) => res.docs ?? []));
+  public override getInitialData(serviceContext: Context): Observable<any[]> {
+    return this.preferenceService.getPreference<any>(
+      serviceContext.emitField,
+      serviceContext.preferenceContext,
+    );
+  }
+
+  public loadInitialData(): Observable<any[]> {
+    throw new Error('Method not implemented.');
   }
 }

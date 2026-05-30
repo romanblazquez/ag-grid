@@ -1,0 +1,55 @@
+// Apply color-scheme based on the Harmonix theme class toggled by HarmonixService
+::ng-deep .mat-mdc-autocomplete-panel {
+  color-scheme: light;
+}
+
+:host-context(.darkMode) ::ng-deep .mat-mdc-autocomplete-panel,
+::ng-deep html.darkMode .mat-mdc-autocomplete-panel {
+  color-scheme: dark;
+}
+
+::ng-deep .darkMode {
+  --mdc-filled-text-field-error-focus-label-text-color: #ffb4aa;
+  --mdc-filled-text-field-error-hover-label-text-color: #ffb4aa;
+  --mdc-filled-text-field-error-label-text-color: #ffb4aa;
+  --mdc-filled-text-field-error-caret-color: #ffb4aa;
+  --mdc-filled-text-field-error-active-indicator-color: #ffb4aa;
+  --mdc-filled-text-field-error-focus-active-indicator-color: #ffb4aa;
+  --mdc-filled-text-field-error-hover-active-indicator-color: #ffb4aa;
+  --mdc-outlined-text-field-error-caret-color: #ffb4aa;
+  --mdc-outlined-text-field-error-focus-label-text-color: #ffb4aa;
+  --mdc-outlined-text-field-error-label-text-color: #ffb4aa;
+  --mdc-outlined-text-field-error-focus-outline-color: #ffb4aa;
+  --mdc-outlined-text-field-error-hover-outline-color: #ffb4aa;
+  --mdc-outlined-text-field-error-outline-color: #ffb4aa;
+}
+
+::ng-deep .darkMode .mat-mdc-form-field-error {
+  color: var(--mdc-theme-error, #ffb4aa);
+}
+
+::ng-deep {
+  mat-option {
+    .mdc-list-item__primary-text {
+      width: 100%;
+    }
+  }
+
+  .column-header {
+    min-height: 0px !important;
+    height: 20px;
+  }
+
+  fmr-pr000539-grid-view-result {
+    .column-header {
+      padding-left: 16px;
+      padding-top: 12px;
+    }
+  }
+
+  fmr-pr000539-tree-view-result {
+    .column-header {
+      padding-left: 50px !important;
+    }
+  }
+}

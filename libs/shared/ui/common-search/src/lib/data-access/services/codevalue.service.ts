@@ -1,131 +1,166 @@
-import { inject, Injectable, InjectionToken } from '@angular/core';
+/*
+ * Copyright (c) 2023 FMR Corp.
+ * All Rights Reserved.
+ *
+ * Fidelity Confidential Information.
+ * Created on 25/04/25, 4:51 PM
+ */
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, map, Observable, of, tap } from 'rxjs';
-import { DataAccessFacadeService, TreeNode } from '@trade-platform/shared/ui/hds-common-search';
+import { map, mergeMap, Observable, tap } from 'rxjs';
+import { ApiName, ServiceConfig } from '../../model/service-config.model';
+import { svcConfig } from '../../model/external-services.constant';
 import { SearchService } from './search.service';
+import { Context } from '../../model/context.model';
+import { Item, TreeNode } from '../../model/tree-result.model';
 
-export const CODEVALUE_SERVICE_URL = new InjectionToken<string>(
-  'CODEVALUE_SERVICE_URL',
-);
-
-export interface CodeValueCode {
+/** Local interfaces replacing proprietary @fmr-pr000539/eqt-ngrx-refdata-services-module */
+export interface Code {
   code: string;
   description: string;
 }
 
 export interface CodeValue {
   name: string;
-  codes: CodeValueCode[];
+  codes: Code[];
 }
 
-interface CodeValueResponse {
+export interface CodeValueResponse {
   codeValues: CodeValue[];
 }
 
 @Injectable()
-export class CodeValueService extends SearchService<TreeNode> {
-  /** Raw code values, separate from the TreeNode cache in persistedData$. */
-  private readonly rawCodeValues$ = new BehaviorSubject<CodeValue[]>([]);
+export class CodeValueService extends SearchService<CodeValue> {
+  public apiRecord: Record<ApiName, ServiceConfig> = svcConfig;
 
-  private readonly http = inject(HttpClient);
-  private readonly url = inject(CODEVALUE_SERVICE_URL, { optional: true });
-  private readonly dataCache = inject(DataAccessFacadeService);
+  public constructor(private readonly http: HttpClient) {
+    super();
+  }
 
-  search(query: string): Observable<TreeNode[]> {
-    return this.getCodeValues().pipe(
-      map((codeValues) => this.filterAndBuildTree(codeValues, query)),
+  public override getInitialData(serviceContext: Context): Observable<CodeValue[]> {
+    return this.search('', serviceContext) as Observable<CodeValue[]>;
+  }
+
+  // eslint-disable-next-line max-lines-per-function
+  public search(query: string, serviceContext: Context): Observable<any> {
+    const dataPool = this.persistedData$.value.length
+      ? this.persistedData$
+      : this.getCodeValues();
+
+    return dataPool.pipe(
+      map((codes) => {
+        return this.filterAndTransform(codes, serviceContext, query);
+      }),
     );
   }
 
-  loadInitialData(): Observable<CodeValue[]> {
-    return this.getCodeValues().pipe(
-      tap((values) => this.rawCodeValues$.next(values)),
-    );
-  }
-
-  getInitialData(): Observable<TreeNode[]> {
-    const cachedSelections = this.dataCache.getPreference<Record<string, unknown>>(
-      'instrumentType',
-    );
-    if (cachedSelections.length) {
-      return of(this.buildSelectionTree(cachedSelections));
-    }
-    if (this.rawCodeValues$.value.length) {
-      return of(this.filterAndBuildTree(this.rawCodeValues$.value, ''));
-    }
-    return this.getCodeValues().pipe(
-      tap((values) => this.rawCodeValues$.next(values)),
-      map((values) => this.filterAndBuildTree(values, '')),
-    );
-  }
-
-  getCodeValues(): Observable<CodeValue[]> {
-    if (!this.url) return of([]);
-    return this.http
-      .get<CodeValueResponse>(this.url)
-      .pipe(map((res) => res.codeValues ?? []));
-  }
-
-  toDataSourceFn() {
-    return (query: string): Observable<TreeNode[]> =>
-      query ? this.search(query) : this.getInitialData();
-  }
-
-  private filterAndBuildTree(
-    codeValues: CodeValue[],
+  private filterAndTransform(
+    codes: CodeValue[],
+    serviceContext: Context,
     query: string,
   ): TreeNode[] {
-    return codeValues
-      .map((cv) => {
-        const filteredCodes = query
-          ? cv.codes.filter(
-              (c) =>
-                c.code.toLowerCase().includes(query.toLowerCase()) ||
-                c.description.toLowerCase().includes(query.toLowerCase()),
-            )
-          : cv.codes;
-        return { cv, filteredCodes };
-      })
-      .filter(({ filteredCodes }) => filteredCodes.length > 0)
-      .map(({ cv, filteredCodes }) =>
-        this.buildTreeNode(cv.name, filteredCodes),
-      );
+    // The mock server returns human-readable group names ("Equity", "Fixed Income", etc.)
+    // rather than the legacy Fidelity internal codes ("EQUITY_IV_TYPES", "VALID_STRUCTURE_TYPE").
+    // Accept every group when either ApiName is present so the POC receives data.
+    const wantsIVTypes = serviceContext.apiNames?.includes(ApiName.GetIVTypes) ?? false;
+    const wantsStructureTypes =
+      serviceContext.apiNames?.includes(ApiName.GetStructureTypes) ?? false;
+
+    return codes
+      .filter(() => wantsIVTypes || wantsStructureTypes)
+      .map((codeValue) => this.queryBasedFilter(codeValue, query, serviceContext))
+      .map((codeValue) => this.buildCodeValueTreeNode(codeValue, serviceContext))
+      .filter((treeNode) => treeNode.children && treeNode.children.length > 1);
   }
 
-  private buildTreeNode(
-    categoryName: string,
-    codes: CodeValueCode[],
+  private buildCodeValueTreeNode(
+    codeValue: CodeValue,
+    serviceContext: Context,
   ): TreeNode {
-    return {
-      items: [{ name: 'description', value: categoryName, visible: true }],
-      children: codes.map((code) => ({
-        items: [
-          { name: 'description', value: code.description, visible: true },
-          { name: 'code', value: code.code, visible: true },
-        ],
+    const parentItems: Array<Item> = [];
+    const item: Item = {
+      name: codeValue.name,
+      value: codeValue.name,
+      visible: true,
+    };
+    parentItems.push(item);
+
+    const headerItems: Item[] = serviceContext.detailHeaders.map((header, i) => {
+      return {
+        name: serviceContext.detailFields.filter((d) => d.visible)[i].name,
+        value: header,
+        visible: true,
+      };
+    });
+
+    const childHeader: TreeNode = {
+      header: true,
+      items: headerItems,
+    };
+
+    const childTreeNodes: TreeNode[] = [];
+    childTreeNodes.push(childHeader);
+
+    codeValue.codes.forEach((code: { code: any; description: any }) => {
+      const childItemCode: Item = {
+        name: 'code',
+        value: code.code,
+        visible: true,
+      };
+      const childItemDescription: Item = {
+        name: 'description',
+        value: code.description,
+        visible: true,
+      };
+      const childTreeNode: TreeNode = {
+        items: [childItemCode, childItemDescription],
         header: false,
-      })),
+      };
+      childTreeNodes.push(childTreeNode);
+    });
+
+    return {
+      items: parentItems,
+      children: childTreeNodes,
       header: false,
     };
   }
 
-  private buildSelectionTree(
-    selections: Record<string, unknown>[],
-  ): TreeNode[] {
-    return selections.map((selection) => ({
-      items: [
-        {
-          name: 'description',
-          value: selection['description'] ?? selection['name'] ?? '',
-          visible: true,
-        },
-        {
-          name: 'code',
-          value: selection['code'] ?? '',
-          visible: true,
-        },
-      ],
-      header: false,
-    }));
+  public loadInitialData(): Observable<CodeValue[]> {
+    return this.getCodeValues().pipe(
+      tap((code) => {
+        this.persistedData$.next(code);
+      }),
+    );
+  }
+
+  public getCodeValues(): Observable<CodeValue[]> {
+    return this.apiRecord.GetIVTypes.url.pipe(
+      mergeMap((url) =>
+        this.http.get<CodeValueResponse>(url).pipe(
+          map((response) => response.codeValues),
+        ),
+      ),
+    );
+  }
+
+  private queryBasedFilter(
+    codeValue: CodeValue,
+    query: string,
+    context: Context,
+  ): CodeValue {
+    let newCodeValue: CodeValue = JSON.parse(JSON.stringify(codeValue)) as CodeValue;
+    const filterMethod = context.multiselect
+      ? this.filterByQueryMultiselect
+      : this.filterByQuerySingleSelect;
+    newCodeValue = {
+      ...codeValue,
+      codes: filterMethod<Code>(newCodeValue.codes, query, [
+        (code: Code) => code.code,
+        (code: Code) => code.description,
+      ]),
+    };
+    newCodeValue.codes.sort((a, b) => a.code.localeCompare(b.code));
+    return newCodeValue;
   }
 }

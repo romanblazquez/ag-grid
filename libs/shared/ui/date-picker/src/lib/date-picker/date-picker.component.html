@@ -1,0 +1,38 @@
+<p-floatlabel variant="on" class="hds-date-picker-floatlabel">
+  <p-datepicker
+    #rangePicker
+    inputId="hds-date-range-input"
+    [formControl]="rangeControl"
+    selectionMode="range"
+    dateFormat="mm/dd/yy"
+    [readonlyInput]="false"
+    [showIcon]="true"
+    [showButtonBar]="false"
+    [maxDate]="allowFutureDates ? null : todayDate"
+    appendTo="body"
+    panelStyleClass="hds-date-range-panel"
+    (onShow)="onDatePickerOpen()"
+    (onClose)="onDatePickerClosed()"
+  >
+    <ng-template #header>
+      <fmr-pr000539-canned-dates-picker
+        [cannedDates]="cannedDates"
+        (dateRangeSelected)="
+          onDateRangePickedFromCannedDates(
+            $event.dateRange,
+            $event.cannedDateRange
+          )
+        "
+      />
+    </ng-template>
+  </p-datepicker>
+  <label for="hds-date-range-input">Date Range</label>
+</p-floatlabel>
+
+@if (
+  !dateRangeGroup.valid && (startDateControl.touched || endDateControl.touched)
+) {
+  <p-message severity="error" variant="simple" size="small" class="block mt-1">
+    {{ getErrorMessage() }}
+  </p-message>
+}

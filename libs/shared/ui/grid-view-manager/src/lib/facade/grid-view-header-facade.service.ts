@@ -1,25 +1,25 @@
-import { Injectable, inject, DestroyRef, computed } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { Injectable, inject, DestroyRef } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { GridViewModel } from '../models/grid-view.model';
+import * as gridViewActions from '../state/actions/grid-view.actions';
 import {
   getEmptyGridState,
   CustomGridState,
 } from '../data-access/grid-state/grid-state.utils';
-import { GridState } from 'ag-grid-community';
+import { GridState } from '@ag-grid-community/core';
 import { GRID_VIEW_CONSTRAINTS } from '../models/grid-view-state.model';
+import { createGridSelectors } from '../state/reducers';
 import {
   Subject,
   BehaviorSubject,
   Observable,
   combineLatest,
   NEVER,
-  of,
 } from 'rxjs';
-import { debounceTime, filter, map, switchMap, catchError, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, map, withLatestFrom } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { GridEditSessionService } from '../services/grid-edit-session.service';
-import { GridViewStore } from '../state/grid-view.store';
-import { GridViewService } from '../data-access/services/grid-view.service';
 
 interface GridStateChangePayload {
   gridId: string;
@@ -39,17 +39,14 @@ const DEBOUNCE_DELAY_MS = 2000;
  * Owns debounce timing, auto-save decisions, and the reactive state
  * observables consumed by the header. Provided at the component level
  * so each header instance has its own isolated state scope.
- *
- * Replaces the original NgRx Store + Actions + Effects integration with
- * direct calls to GridViewStore (signals) and GridViewService (storage).
  */
 @Injectable()
 export class GridViewHeaderFacadeService {
   /** Duration after which grid changes are considered settled for auto-save. */
   public static readonly DEBOUNCE_DELAY_MS = DEBOUNCE_DELAY_MS;
 
-  private readonly store = inject(GridViewStore);
-  private readonly gridViewService = inject(GridViewService);
+  private readonly store = inject(Store);
+  private readonly actions$ = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
   private readonly editSession = inject(GridEditSessionService, {
     optional: true,
@@ -92,9 +89,8 @@ export class GridViewHeaderFacadeService {
   public canSave$: Observable<boolean> = NEVER;
 
   /**
-   * Emits when a draft commit resolves to "save as new" (source is a system
-   * default/preset). The component opens a "Save As New View" dialog on emission.
-   * Populated by {@link init}.
+   * Emits when the NgRx effect signals that a draft commit requires a
+   * "Save As New View" dialog (source is a preset). Populated by {@link init}.
    */
   public saveAsNewRequired$: Observable<{
     draftView: GridViewModel;
@@ -107,8 +103,9 @@ export class GridViewHeaderFacadeService {
    * in `ngOnInit` after `gridId` is resolved, before any observable bindings.
    */
   public init(gridId: string): void {
-    const views$ = toObservable(this.store.getViews(gridId));
-    const activeView$ = toObservable(this.store.getSelectedView(gridId));
+    const selectors = createGridSelectors(gridId);
+    const views$ = this.store.select(selectors.getViews);
+    const activeView$ = this.store.select(selectors.getSelectedView);
 
     this.views$ = views$;
     this.activeView$ = activeView$;
@@ -217,7 +214,7 @@ export class GridViewHeaderFacadeService {
 
   /**
    * Builds the `saveAsNewRequired$` observable:
-   * emits when the store signals that a draft commit requires a "Save As New View" dialog.
+   * emits when the NgRx effect signals that a draft commit requires a "Save As New View" dialog.
    */
   private buildSaveAsNewRequired$(
     gridId: string,
@@ -227,8 +224,9 @@ export class GridViewHeaderFacadeService {
     sourceView: GridViewModel | undefined;
     suggestedName: string;
   }> {
-    return this.store.commitDraftSaveAsNew$.pipe(
-      filter((payload) => payload.gridId === gridId),
+    return this.actions$.pipe(
+      ofType(gridViewActions.commitDraftViewSaveAsNew),
+      filter((action) => action.gridId === gridId),
       withLatestFrom(views$),
       map(([{ draftView, sourceView }, views]) => {
         const baseName =
@@ -243,8 +241,8 @@ export class GridViewHeaderFacadeService {
   }
 
   /**
-   * Called by the component whenever the grid emits a state change event
-   * and the origin gate confirms it is a genuine user interaction.
+   * Called by the component whenever `EqtCommonGridComponent.stateChanged` fires
+   * **and** the origin gate confirms it is a genuine user interaction.
    * Pushes to the internal Subject which drives the debounce pipeline.
    */
   public notifyGridStateChanged(
@@ -271,18 +269,13 @@ export class GridViewHeaderFacadeService {
   ): void {
     const selected = views.find((v: GridViewModel) => v.name === viewName);
     if (selected) {
-      // Persist selection then update store
-      this.gridViewService
-        .saveAllViews(
+      this.store.dispatch(
+        gridViewActions.selectGridView({
           gridId,
-          views
-            .filter((v) => !v.isDraft)
-            .map((v) => ({ ...v, isSelected: v.id === selected.id })),
+          viewId: selected.id,
           appName,
-        )
-        .pipe(catchError(() => of(undefined)))
-        .subscribe();
-      this.store.selectView(gridId, selected.id);
+        }),
+      );
     }
   }
 
@@ -296,16 +289,14 @@ export class GridViewHeaderFacadeService {
     const view = views.find((v: GridViewModel) => v.name === data.oldName);
     if (view && !view.isDefault) {
       const updatedView = { ...view, name: data.newName };
-      this.store.setLoading(gridId, true);
-      this.gridViewService
-        .updateView(gridId, updatedView, columnDefs, appName)
-        .pipe(catchError((err: Error) => {
-          this.store.setError(gridId, err.message);
-          return of(null);
-        }))
-        .subscribe((result) => {
-          if (result) this.store.updateViewSuccess(gridId, result);
-        });
+      this.store.dispatch(
+        gridViewActions.updateGridView({
+          gridId,
+          view: updatedView,
+          columnDefs,
+          appName,
+        }),
+      );
     }
   }
 
@@ -315,16 +306,9 @@ export class GridViewHeaderFacadeService {
     columnDefs: Array<{ colId: string }>,
     appName?: string,
   ): void {
-    this.store.setLoading(gridId, true);
-    this.gridViewService
-      .deleteView(gridId, viewId, columnDefs, appName)
-      .pipe(catchError((err: Error) => {
-        this.store.setError(gridId, err.message);
-        return of(undefined);
-      }))
-      .subscribe(() => {
-        this.store.deleteViewSuccess(gridId, viewId);
-      });
+    this.store.dispatch(
+      gridViewActions.deleteGridView({ gridId, viewId, columnDefs, appName }),
+    );
   }
 
   public createView(
@@ -341,16 +325,14 @@ export class GridViewHeaderFacadeService {
       gridState: view.gridState,
       createdBy: 'user',
     };
-    this.store.setLoading(gridId, true);
-    this.gridViewService
-      .createView(gridId, newView, columnDefs, appName)
-      .pipe(catchError((err: Error) => {
-        this.store.setError(gridId, err.message);
-        return of(null);
-      }))
-      .subscribe((created) => {
-        if (created) this.store.createViewSuccess(gridId, created);
-      });
+    this.store.dispatch(
+      gridViewActions.createGridView({
+        gridId,
+        view: newView,
+        columnDefs,
+        appName,
+      }),
+    );
   }
 
   public createViewFromDialog(
@@ -369,16 +351,14 @@ export class GridViewHeaderFacadeService {
         gridState: gridState ?? getEmptyGridState(),
         createdBy: 'user',
       };
-      this.store.setLoading(gridId, true);
-      this.gridViewService
-        .createView(gridId, newView, columnDefs, appName)
-        .pipe(catchError((err: Error) => {
-          this.store.setError(gridId, err.message);
-          return of(null);
-        }))
-        .subscribe((created) => {
-          if (created) this.store.createViewSuccess(gridId, created);
-        });
+      this.store.dispatch(
+        gridViewActions.createGridView({
+          gridId,
+          view: newView,
+          columnDefs,
+          appName,
+        }),
+      );
     }
   }
 
@@ -405,43 +385,23 @@ export class GridViewHeaderFacadeService {
     appName?: string,
   ): void {
     if (activeView.isDraft) {
-      this.gridViewService
-        .commitDraft(gridId, columnDefs, appName)
-        .pipe(
-          catchError((err: Error) => {
-            this.store.setError(gridId, err.message);
-            return of(null);
-          }),
-        )
-        .subscribe((result) => {
-          if (!result) return;
-          if (result.committed && result.sourceView) {
-            this.store.commitDraftSuccess(gridId, result.sourceView);
-          } else if (result.draftView) {
-            this.store.commitDraftSaveAsNew({
-              gridId,
-              draftView: result.draftView,
-              sourceView: result.sourceView,
-            });
-          }
-        });
+      this.store.dispatch(
+        gridViewActions.commitDraftView({ gridId, columnDefs, appName }),
+      );
       return;
     }
-
     const updatedView = {
       ...activeView,
       gridState: { ...currentGridState, expandAll },
     };
-    this.store.setLoading(gridId, true);
-    this.gridViewService
-      .updateView(gridId, updatedView, columnDefs, appName)
-      .pipe(catchError((err: Error) => {
-        this.store.setError(gridId, err.message);
-        return of(null);
-      }))
-      .subscribe((result) => {
-        if (result) this.store.updateViewSuccess(gridId, result);
-      });
+    this.store.dispatch(
+      gridViewActions.updateGridView({
+        gridId,
+        view: updatedView,
+        columnDefs,
+        appName,
+      }),
+    );
   }
 
   public discardDraft(
@@ -450,15 +410,23 @@ export class GridViewHeaderFacadeService {
     columnDefs: Array<{ colId: string }>,
     appName?: string,
   ): void {
-    this.gridViewService
-      .deleteDraft(gridId, columnDefs, appName, fallbackViewId)
-      .pipe(catchError(() => of(undefined)))
-      .subscribe(() => {
-        this.store.deleteDraftSuccess(gridId);
-        if (fallbackViewId) {
-          this.store.selectView(gridId, fallbackViewId);
-        }
-      });
+    this.store.dispatch(
+      gridViewActions.deleteDraftView({
+        gridId,
+        columnDefs,
+        appName,
+        fallbackViewId,
+      }),
+    );
+    if (fallbackViewId) {
+      this.store.dispatch(
+        gridViewActions.selectGridView({
+          gridId,
+          viewId: fallbackViewId,
+          appName,
+        }),
+      );
+    }
   }
 
   public autoSaveDraft(
@@ -477,22 +445,15 @@ export class GridViewHeaderFacadeService {
           .replace(GRID_VIEW_CONSTRAINTS.DRAFT_SUFFIX, '')
           .replace(GRID_VIEW_CONSTRAINTS.DRAFT_PREFIX, '')
       : activeView.name;
-
-    this.gridViewService
-      .saveDraft(
+    this.store.dispatch(
+      gridViewActions.saveDraftView({
         gridId,
-        sourceId,
+        sourceViewId: sourceId,
         sourceViewName,
-        currentGridState,
+        draftGridState: currentGridState,
         columnDefs,
         appName,
-      )
-      .pipe(catchError((err: Error) => {
-        this.store.setError(gridId, err.message);
-        return of(null);
-      }))
-      .subscribe((draft) => {
-        if (draft) this.store.saveDraftSuccess(gridId, draft);
-      });
+      }),
+    );
   }
 }

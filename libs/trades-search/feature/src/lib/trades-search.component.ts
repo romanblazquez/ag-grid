@@ -19,11 +19,17 @@ import {
   TreeNode,
 } from '@trade-platform/shared/ui/hds-common-search';
 import {
-  BrokerService,
+  LegacyDataAccessFacadeService,
+  BrokersService,
   CodeValueService,
+  PersonDirectoryService,
   PersonSearchService,
   PortfolioService,
+  ParentBrokerSearchService,
+  PersonService as SharedPersonServiceToken,
   SecurityService,
+  TeamSearchService,
+  TraderTeamSearchService,
 } from '@trade-platform/shared/ui/common-search';
 import {
   DatePickerComponent,
@@ -48,70 +54,45 @@ import {
     HdsCommonSearchComponent,
     DatePickerComponent,
   ],
-  // Services are provided here so each TradesSearchComponent instance gets its
-  // own cache (BehaviorSubject in SearchService). Root-provided services would
-  // share state across unrelated search panels.
   providers: [
-    SecurityService,
-    BrokerService,
+    DataAccessFacadeService,
+    LegacyDataAccessFacadeService,
+    BrokersService,
+    CodeValueService,
     PersonSearchService,
     PortfolioService,
-    CodeValueService,
+    ParentBrokerSearchService,
+    PersonDirectoryService,
+    SecurityService,
+    TeamSearchService,
+    TraderTeamSearchService,
+    { provide: SharedPersonServiceToken, useExisting: PersonDirectoryService },
   ],
 })
 export class TradesSearchComponent {
   private readonly tradesSearchFacade = inject(TradesSearchFacadeService);
-  private readonly searchPreferenceCache = inject(DataAccessFacadeService);
-  private readonly searchPreferenceKeys = [
-    'symbol',
-    'fundPm',
-    'broker',
-    'instrumentType',
-    'trader',
-  ];
-
-  // ── Search services (real HTTP layer) ─────────────────────────────────────
-  private readonly securityService = inject(SecurityService);
-  private readonly brokerService = inject(BrokerService);
-  private readonly personService = inject(PersonSearchService);
-  private readonly portfolioService = inject(PortfolioService);
-  private readonly codeValueService = inject(CodeValueService);
 
   readonly formGroup = new FormGroup({});
 
-  // ── Search contexts ────────────────────────────────────────────────────────
-  // Each context binds a searchType (for registry config: placeholder, fields,
-  // widths) plus dataSourceFn/initialDataFn (real HTTP via the injected service).
-  // This mirrors the POC pattern: the component owns the wiring; the component
-  // template stays unaware of services.
-
   readonly symbolSearchContext: SearchContext = {
     searchType: SearchType.Symbol,
-    dataSourceFn: (q) => this.securityService.search(q),
-    initialDataFn: () => this.securityService.getInitialData(),
   };
 
   readonly brokerSearchContext: SearchContext = {
     searchType: SearchType.Broker,
-    dataSourceFn: (q) => this.brokerService.search(q),
-    initialDataFn: () => this.brokerService.getInitialData(),
   };
 
   readonly traderSearchContext: SearchContext = {
     searchType: SearchType.Trader,
-    dataSourceFn: (q) => this.personService.search(q),
-    initialDataFn: () => this.personService.getInitialData(),
   };
 
   readonly instrumentTypeSearchContext: SearchContext = {
     searchType: SearchType.InstrumentType,
-    dataSourceFn: (q) => this.codeValueService.search(q),
-    initialDataFn: () => this.codeValueService.getInitialData(),
     disableRules: {
-      tree: (node: TreeNode | { items: { name: string; value: unknown }[] }) => {
-        const items = (node as TreeNode).items;
-        const code = (items?.[1]?.value ?? items?.[0]?.value) as string;
-        return typeof code === 'string' && code.toUpperCase() === 'CS';
+      tree: (node: TreeNode) => {
+        const item = node.items[0];
+        const code = item.value as string;
+        return code.toUpperCase() === 'CS';
       },
     },
   };
@@ -119,11 +100,7 @@ export class TradesSearchComponent {
   readonly fundSearchContext = computed<SearchContext | null>(() =>
     this.tradesSearchFacade.isExecutionsContext()
       ? null
-      : {
-          searchType: SearchType.FundPm,
-          dataSourceFn: (q) => this.portfolioService.search(q),
-          initialDataFn: () => this.portfolioService.getInitialData(),
-        },
+      : { searchType: SearchType.FundPm },
   );
 
   // ── UI state ───────────────────────────────────────────────────────────────
@@ -180,18 +157,13 @@ export class TradesSearchComponent {
     this.tradesSearchFacade.updateInteractionType(
       getInteractionTypeFromEvent(event),
     );
-    if (this.areThereErrors()) return;
-    this.searchPreferenceCache.commitPreferences();
-    this.tradesSearchFacade.searchData();
+    if (!this.areThereErrors()) this.tradesSearchFacade.searchData();
   }
 
   clearAll(): void {
     this.tradesSearchFacade.clearTrades();
     this.datePicker()?.clearDatePicker();
     this.clearSignal.set({});
-    this.searchPreferenceCache.clearPendingPreferences(
-      this.searchPreferenceKeys,
-    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

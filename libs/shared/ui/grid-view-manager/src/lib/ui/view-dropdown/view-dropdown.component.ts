@@ -3,7 +3,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ViewDialogComponent } from '../view-dialog/view-dialog.component';
-import { HdsIconComponent } from '../shared/hds-icon/hds-icon.component';
+import { HdsIconComponent, HdsIconName } from '@fmr-pr000264/hds-core-icons';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConnectionPositionPair, OverlayModule } from '@angular/cdk/overlay';
 import { GridViewModel } from '../../models/grid-view.model';
@@ -29,11 +29,9 @@ import { v4 as uuidv4 } from 'uuid';
 export class ViewDropdownComponent {
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
   private static readonly OVERLAY_VERTICAL_OFFSET = 8;
-
   public constructor(
     private readonly confirmationService: ConfirmationService,
   ) {}
-
   public activeMenuView: string | null = null;
   public menuPosition: 'left' | 'right' = 'right';
 
@@ -45,14 +43,13 @@ export class ViewDropdownComponent {
   } = {};
   private _pendingView?: GridViewModel;
 
-  // Icon name constants (plain strings, no proprietary type)
-  public readonly chevronDownIcon = 'hds-chevron-down';
-  public readonly lockIcon = 'hds-locked-filled';
-  public readonly copyIcon = 'hds-copy';
-  public readonly editIcon = 'hds-edit';
-  public readonly deleteIcon = 'hds-delete';
-  public readonly moreIcon = 'hds-ellipsis-horizontal';
-  public readonly addIcon = 'hds-add-new-item';
+  public readonly chevronDownIcon: HdsIconName = 'hds-chevron-down';
+  public readonly lockIcon: HdsIconName = 'hds-locked-filled';
+  public readonly copyIcon: HdsIconName = 'hds-copy';
+  public readonly editIcon: HdsIconName = 'hds-edit';
+  public readonly deleteIcon: HdsIconName = 'hds-delete';
+  public readonly moreIcon: HdsIconName = 'hds-ellipsis-horizontal';
+  public readonly addIcon: HdsIconName = 'hds-add-new-item';
 
   public openMenu(view: { name: string }, event: MouseEvent): void {
     this.activeMenuView = view.name;
@@ -63,8 +60,10 @@ export class ViewDropdownComponent {
     const target = event.target as HTMLElement;
     const rect = target.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const menuWidth = 220;
+    const menuWidth = 220; // Width of kebab menu
     const spaceOnRight = viewportWidth - rect.right;
+
+    // If there's not enough space on the right, open to the left
     this.menuPosition = spaceOnRight < menuWidth ? 'left' : 'right';
   }
 
@@ -111,7 +110,7 @@ export class ViewDropdownComponent {
   ];
 
   public get filteredViews(): GridViewModel[] {
-    // Exclude drafts from the dropdown list
+    // Exclude drafts from the dropdown list — the draft state is reflected
     const nonDraftViews = this.views.filter((v) => !v.isDraft);
     if (nonDraftViews.length === 1) {
       return nonDraftViews;

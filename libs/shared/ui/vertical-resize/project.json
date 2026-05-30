@@ -1,9 +1,9 @@
 {
   "name": "shared-ui-vertical-resize",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "library",
   "sourceRoot": "libs/shared/ui/vertical-resize/src",
-  "prefix": "tp",
+  "prefix": "lib",
+  "projectType": "library",
   "tags": ["scope:shared", "type:ui"],
   "targets": {
     "test": {

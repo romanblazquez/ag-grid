@@ -1,3 +1,11 @@
+<!--
+~ Copyright (c) 2023 FMR Corp.
+~ All Rights Reserved.
+~
+~ Fidelity Confidential Information.
+~ Created on 10/12/23, 1:48 PM
+-->
+
 <mat-form-field [style.width]="searchBarWidth + 'px'">
   <mat-label>{{ placeholderText }}</mat-label>
   <input
@@ -26,7 +34,6 @@
       close
     </mat-icon>
   }
-
   @if (!hideArrowDropDown ? defaultResults && !isInputInFocus : false) {
     <mat-icon
       (click)="showDefaultResults($event)"
@@ -71,7 +78,6 @@
       }
     }
   </mat-autocomplete>
-
   @if (searchFormControl.errors && useMatError) {
     <mat-error>
       {{ errorMessage }}

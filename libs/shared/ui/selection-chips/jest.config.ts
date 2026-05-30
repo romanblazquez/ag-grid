@@ -3,7 +3,6 @@ export default {
   displayName: 'shared-ui-selection-chips',
   preset: '../../../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  globals: {},
   coverageDirectory: '../../../../coverage/libs/shared/ui/selection-chips',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [

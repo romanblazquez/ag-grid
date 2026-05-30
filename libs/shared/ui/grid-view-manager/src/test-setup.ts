@@ -18,3 +18,4 @@ getTestBed().initTestEnvironment(
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting(),
 );
+// jest-preset-angular v15+ handles setup automatically through preset

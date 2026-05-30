@@ -3,7 +3,7 @@
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
   "sourceRoot": "libs/shared/ui/suggestible-search/src",
-  "prefix": "tp",
+  "prefix": "fmr-pr000539",
   "tags": ["scope:shared", "type:ui"],
   "targets": {
     "test": {

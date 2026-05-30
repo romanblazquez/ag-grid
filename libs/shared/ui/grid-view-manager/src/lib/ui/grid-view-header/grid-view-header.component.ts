@@ -15,12 +15,18 @@ import {
   toObservable,
   toSignal,
 } from '@angular/core/rxjs-interop';
-import { ColDef, GridApi, GridState } from 'ag-grid-community';
+import { ColDef, GridState } from '@ag-grid-community/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ButtonModule } from 'primeng/button';
 import { ButtonGroupModule } from 'primeng/buttongroup';
 import { TooltipModule } from 'primeng/tooltip';
-import { Subject, filter, switchMap, take } from 'rxjs';
+import { HdsIconComponent } from '@fmr-pr000264/hds-core-icons';
+import { Subject, filter, switchMap, take, takeUntil } from 'rxjs';
+import {
+  EqtCommonGridComponent,
+  Icon,
+  getCurrentSystemDateTimeWithZone,
+} from '@fmr-pr000539/eqt-common-grid';
 import { GridViewModel } from '../../models/grid-view.model';
 import { GRID_VIEW_CONSTRAINTS } from '../../models/grid-view-state.model';
 import {
@@ -29,40 +35,13 @@ import {
 } from '../../data-access/grid-state/grid-state.utils';
 import { GridViewManagerDirective } from '../../feature/grid-view-manager.directive';
 import { GridViewHeaderFacadeService } from '../../facade/grid-view-header-facade.service';
+import { GridViewManagerStoreModule } from '../../state/grid-view-manager-store.module';
 import { GridEditSessionService } from '../../services/grid-edit-session.service';
 import { ViewDialogComponent } from '../view-dialog/view-dialog.component';
 import { ViewDropdownComponent } from '../view-dropdown/view-dropdown.component';
 import { HEADER_ICONS } from './grid-view-icons';
-import { Icon } from './icon.enum';
-import { HdsIconComponent } from '../shared/hds-icon/hds-icon.component';
-
-/** Minimal interface for the host grid component. */
-export interface GridHostRef {
-  gridId?: string;
-  appName?: string;
-  gridApi: GridApi;
-  columnDefs: ColDef[];
-  stateChanged: { pipe: (...args: unknown[]) => unknown; subscribe: (...args: unknown[]) => unknown };
-  sortChanged: { pipe: (...args: unknown[]) => unknown; subscribe: (...args: unknown[]) => unknown };
-  gridReadyEvent: { pipe: (...args: unknown[]) => unknown; subscribe: (...args: unknown[]) => unknown };
-  isFiltersActive?: () => boolean;
-  isSortingAppliedInGrid?: boolean;
-  showExpandAll?: () => boolean;
-  exportData?: () => void;
-  expandAll?: () => void;
-  collapseAll?: () => void;
-  refreshGridData?: () => void;
-  clearAllFilters?: () => void;
-  removeAllSorting?: () => void;
-  resetGrid?: () => void;
-}
 
 type DialogInitialData = Partial<GridViewModel> & { name?: string };
-
-/** Returns the current timestamp in ISO format. Replaces proprietary getCurrentSystemDateTimeWithZone. */
-function getCurrentTimestamp(): string {
-  return new Date().toISOString();
-}
 
 /* eslint-disable @angular-eslint/component-selector */
 @Component({
@@ -83,6 +62,7 @@ function getCurrentTimestamp(): string {
     ViewDropdownComponent,
     ViewDialogComponent,
     HdsIconComponent,
+    GridViewManagerStoreModule,
   ],
   providers: [GridViewHeaderFacadeService],
   templateUrl: './grid-view-header.component.html',
@@ -95,7 +75,9 @@ export class GridViewHeaderComponent {
   public readonly appName = input<string | undefined>(undefined);
   public readonly defaultViews = input<GridViewModel[]>([]);
   public readonly hideIcons = input<Icon[]>([]);
-  public readonly lastUpdatedTimestamp = input<string>(getCurrentTimestamp());
+  public readonly lastUpdatedTimestamp = input<string>(
+    getCurrentSystemDateTimeWithZone(),
+  );
 
   public readonly icons = HEADER_ICONS;
   public readonly allIcons = Icon;
@@ -106,8 +88,14 @@ export class GridViewHeaderComponent {
   private readonly editSession = inject(GridEditSessionService, {
     optional: true,
   });
+  private readonly parentGrid = inject(EqtCommonGridComponent, {
+    optional: true,
+    skipSelf: true,
+  });
 
-  public readonly grid = signal<GridHostRef | undefined>(undefined);
+  public readonly grid = signal<EqtCommonGridComponent | undefined>(
+    this.parentGrid ?? undefined,
+  );
 
   public readonly resolvedGridId = computed(
     () => this.gridId() || this.managerDirective.resolvedId,
@@ -155,19 +143,27 @@ export class GridViewHeaderComponent {
 
   public readonly isFiltersActive = computed(() => {
     this.gridInteractionVersion();
-    return this.grid()?.isFiltersActive?.() ?? false;
+    return this.grid()?.isFiltersActive() ?? false;
   });
   public readonly isSortingApplied = computed(() => {
     this.gridInteractionVersion();
     return this.grid()?.isSortingAppliedInGrid ?? false;
   });
+  public readonly clearFiltersIcon = computed(() =>
+    this.isFiltersActive()
+      ? this.icons.filterFilled
+      : this.icons.filterUnfilled,
+  );
+  public readonly removeSortIcon = computed(() =>
+    this.isSortingApplied() ? this.icons.sortOrdered : this.icons.sortUnordered,
+  );
   public readonly clearFiltersDisabled = computed(
     () => !this.isFiltersActive(),
   );
   public readonly removeSortDisabled = computed(() => !this.isSortingApplied());
   public readonly showExpandAll = computed(() => {
     this.gridInteractionVersion();
-    return this.grid()?.showExpandAll?.() ?? true;
+    return this.grid()?.showExpandAll() ?? true;
   });
   public readonly isDefaultView = computed(() => {
     const av = this.activeView();
@@ -189,6 +185,7 @@ export class GridViewHeaderComponent {
   private dialogGridState: CustomGridState | null = null;
 
   private readonly gridEventsTeardown = new Subject<void>();
+  private gridApiCleanups: Array<() => void> = [];
 
   public constructor() {
     effect(() => {
@@ -200,10 +197,15 @@ export class GridViewHeaderComponent {
       }
     });
 
-    this.destroyRef.onDestroy(() => {
-      this.gridEventsTeardown.next();
-      this.gridEventsTeardown.complete();
+    effect(() => {
+      const grid = this.grid();
+      this.teardownGridEvents();
+      if (grid) {
+        this.bindGridEvents(grid);
+      }
     });
+
+    this.destroyRef.onDestroy(() => this.teardownGridEvents());
   }
 
   private subscribeFacadeSideEffects(): void {
@@ -216,12 +218,86 @@ export class GridViewHeaderComponent {
       });
   }
 
-  public setGrid(value: GridHostRef | undefined): void {
+  private teardownGridEvents(): void {
+    this.gridApiCleanups.forEach((fn) => fn());
+    this.gridApiCleanups = [];
+    this.gridEventsTeardown.next();
+  }
+
+  private bindGridEvents(grid: EqtCommonGridComponent): void {
+    grid.stateChanged
+      .pipe(takeUntil(this.gridEventsTeardown))
+      .subscribe((state: GridState) => this.onGridStateChanged(state));
+
+    grid.sortChanged
+      .pipe(takeUntil(this.gridEventsTeardown))
+      .subscribe(() => this.bumpInteraction());
+
+    grid.gridReadyEvent
+      .pipe(takeUntil(this.gridEventsTeardown))
+      .subscribe((event) => {
+        this.bumpInteraction();
+        const bump = (): void => this.bumpInteraction();
+        event.api.addEventListener('filterChanged', bump);
+        event.api.addEventListener('sortChanged', bump);
+        this.gridApiCleanups.push(() => {
+          event.api.removeEventListener('filterChanged', bump);
+          event.api.removeEventListener('sortChanged', bump);
+        });
+      });
+  }
+
+  private bumpInteraction(): void {
+    this.gridInteractionVersion.update((v) => v + 1);
+  }
+
+  private onGridStateChanged(gridState: GridState): void {
+    this.bumpInteraction();
+    const grid = this.grid();
+    if (!grid) return;
+
+    const validColIds = new Set<string>(
+      grid.gridApi.getColumns()?.map((c) => c.getColId()) ?? [],
+    );
+
+    const stateWithExpand: CustomGridState = {
+      ...(gridState as CustomGridState),
+      expandAll: !grid.showExpandAll(),
+    };
+
+    if (this.editSession?.isSuppressing() === true) {
+      this.editSession.commitBaseline(
+        stateWithExpand as CustomGridState,
+        validColIds,
+      );
+      return;
+    }
+
+    if (this.editSession && !this.editSession.isUserChange()) return;
+
+    this.facade.notifyGridStateChanged(
+      this.resolvedGridId(),
+      stateWithExpand as unknown as GridState,
+      this.getColumnDefs(),
+      validColIds,
+      this.resolvedAppName(),
+    );
+  }
+
+  private getColumnDefs(): Array<{ colId: string }> {
+    const grid = this.grid();
+    if (!grid) return [];
+    return grid.columnDefs
+      .filter((col: ColDef) => col.colId)
+      .map((col: ColDef) => ({ colId: col.colId as string }));
+  }
+
+  public setGrid(value: EqtCommonGridComponent | undefined): void {
     this.grid.set(value);
   }
 
   public resetGrid(): void {
-    this.grid()?.resetGrid?.();
+    this.grid()?.resetGrid();
   }
 
   public resetView(): void {
@@ -245,7 +321,7 @@ export class GridViewHeaderComponent {
     this.facade.saveView(
       this.resolvedGridId(),
       av,
-      (this.grid()?.gridApi.getState() as GridState | undefined) ?? {},
+      this.grid()?.gridApi.getState() ?? {},
       !this.showExpandAll(),
       this.getColumnDefs(),
       this.resolvedAppName(),
@@ -253,37 +329,37 @@ export class GridViewHeaderComponent {
   }
 
   public exportData(): void {
-    this.grid()?.exportData?.();
+    this.grid()?.exportData();
   }
 
   public expandAll(): void {
     try {
-      this.grid()?.expandAll?.();
+      this.grid()?.expandAll();
       this.bumpInteraction();
     } catch (error) {
-      console.error('Failed to expand all:', error);
+      console.error('Failed to dispatch expandAll action:', error);
     }
   }
 
   public collapseAll(): void {
     try {
-      this.grid()?.collapseAll?.();
+      this.grid()?.collapseAll();
       this.bumpInteraction();
     } catch (error) {
-      console.error('Failed to collapse all:', error);
+      console.error('Failed to dispatch collapseAll action:', error);
     }
   }
 
   public refreshGridData(): void {
-    this.grid()?.refreshGridData?.();
+    this.grid()?.refreshGridData();
   }
 
   public clearAllFilters(): void {
-    this.grid()?.clearAllFilters?.();
+    this.grid()?.clearAllFilters();
   }
 
   public removeAllSorting(): void {
-    this.grid()?.removeAllSorting?.();
+    this.grid()?.removeAllSorting();
   }
 
   public onSelectView(viewName: string): void {
@@ -354,17 +430,5 @@ export class GridViewHeaderComponent {
       this.resolvedAppName(),
     );
     this.dialogGridState = null;
-  }
-
-  private getColumnDefs(): Array<{ colId: string }> {
-    const grid = this.grid();
-    if (!grid) return [];
-    return grid.columnDefs
-      .filter((col: ColDef) => col.colId)
-      .map((col: ColDef) => ({ colId: col.colId as string }));
-  }
-
-  private bumpInteraction(): void {
-    this.gridInteractionVersion.update((v) => v + 1);
   }
 }

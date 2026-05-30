@@ -1,12 +1,23 @@
-/**
- * Generic suggestion type for suggestible search results.
- * Extend or replace this union with domain-specific suggestion interfaces as needed.
+/*
+ * Copyright (c) 2023 FMR Corp.
+ * All Rights Reserved.
+ *
+ * Fidelity Confidential Information.
+ * Created on 10/12/23, 1:50 PM
  */
-export type SuggestibleSearchSuggestion = Record<string, unknown>;
+
+import {
+  AnalystSuggestion,
+  SecuritySuggestion,
+  PorfolioSuggestion,
+  IndexSuggestion,
+} from '@fmr-pr000539/shared/data';
 
 /**
- * Generic response envelope returned by the search API.
+ * This will be an union type of multiple interfaces as the models of Suggestible Search Bar grows
  */
-export interface SuggestibleSearchResponse<T> {
-  suggestions: Array<T>;
-}
+export type SuggestibleSearchSuggestion =
+  | SecuritySuggestion
+  | AnalystSuggestion
+  | PorfolioSuggestion
+  | IndexSuggestion;

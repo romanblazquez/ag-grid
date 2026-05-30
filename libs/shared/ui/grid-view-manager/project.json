@@ -2,9 +2,9 @@
   "name": "shared-ui-grid-view-manager",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/shared/ui/grid-view-manager/src",
-  "prefix": "tp",
+  "prefix": "lib",
   "projectType": "library",
-  "tags": ["scope:shared", "type:ui"],
+  "tags": ["scope:shared", "type:feature"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",

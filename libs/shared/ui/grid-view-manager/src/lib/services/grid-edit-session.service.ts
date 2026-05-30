@@ -34,7 +34,7 @@ export class GridEditSessionService {
         this.suppressDepth = 0;
         this.origin = 'user';
         this.tailTimer = null;
-      }, GridEditSessionService.SUPPRESSION_TAIL_MS);
+      }, GridEditSessionService.SUPPRESSION_TAIL_MS); // see SUPPRESSION_TAIL_MS constant
     }
   }
 

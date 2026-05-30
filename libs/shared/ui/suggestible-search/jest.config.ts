@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2023 FMR Corp.
+ * All Rights Reserved.
+ *
+ * Fidelity Confidential Information.
+ * Created on 10/12/23, 1:52 PM
+ */
+
 /* eslint-disable */
 export default {
   displayName: 'shared-ui-suggestible-search',

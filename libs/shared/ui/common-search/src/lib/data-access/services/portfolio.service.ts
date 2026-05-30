@@ -1,72 +1,61 @@
-import { inject, Injectable, InjectionToken } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { ApiName, ServiceConfig } from '../../model/service-config.model';
+import { Context } from '../../model/context.model';
+import { svcConfig } from '../../model/external-services.constant';
+import { mergeMap, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable, of } from 'rxjs';
-import { AbstractData, DataAccessFacadeService } from '@trade-platform/shared/ui/hds-common-search';
+import { map } from 'rxjs/operators';
+import { AbstractData } from '../../model/solr-response.model';
 import { SearchService } from './search.service';
-import { bestMatchSortFn } from '../../util/sorting-util';
+import { PreferenceService } from './preference.service';
+import { TreeNode } from '../../model/tree-result.model';
 
-export const PORTFOLIO_SERVICE_URL = new InjectionToken<string>(
-  'PORTFOLIO_SERVICE_URL',
-);
-
-export interface FundData {
-  shortName: string;
-  fundNumber: string;
-  fullName: string;
-  [key: string]: unknown;
-}
-
-interface FundResponse {
-  funds?: FundData[];
-  docs?: FundData[];
+interface MockPortfolioResponse {
+  docs?: AbstractData[];
 }
 
 @Injectable()
-export class PortfolioService extends SearchService<FundData> {
-  private readonly http = inject(HttpClient);
-  private readonly url = inject(PORTFOLIO_SERVICE_URL, { optional: true });
-  private readonly dataCache = inject(DataAccessFacadeService);
+export class PortfolioService extends SearchService<any> {
+  public apiRecord: Record<ApiName, ServiceConfig> = svcConfig;
 
-  search(query: string): Observable<FundData[]> {
-    if (!this.url) return of([]);
-    let queryStr = query.trim() ? `${encodeURIComponent(query.trim())}*` : '*';
-    if (query.includes(',')) {
-      queryStr = query
-        .replace(/\s/g, '')
-        .split(',')
-        .map((t) => encodeURIComponent(t))
-        .join(' ');
-    }
-    return this.http
-      .get<FundResponse>(`${this.url}?q=${queryStr}`)
-      .pipe(
-        map((res) =>
-          (res.docs ?? res.funds ?? []).sort(
-            bestMatchSortFn(query, (f) => f.shortName),
-          ),
-        ),
-      );
+  public constructor(
+    private readonly httpClient: HttpClient,
+    private readonly preferenceService: PreferenceService,
+  ) {
+    super();
   }
 
-  loadInitialData(): Observable<unknown> {
-    return of([]);
-  }
-
-  getInitialData(): Observable<FundData[]> {
-    const cachedValues = this.dataCache.getPreference<unknown>('fundPm');
-    if (!cachedValues.length) {
-      return this.search('');
-    }
-
-    return this.search('').pipe(
-      map((rows) =>
-        this.dataCache.getPreference<FundData>('fundPm', rows, 'fundNumber'),
-      ),
+  public search(query: string, serviceContext: Context): Observable<any[]> {
+    return this.apiRecord.GetPortfolio.url.pipe(
+      mergeMap((baseUrl) => {
+        // Append trailing * for prefix matching (the mock server strips it)
+        let queryStr = `${query}*`;
+        if (query.includes(',')) {
+          queryStr = query.replace(/\s/g, '').replace(/,/g, ' ');
+        }
+        const url = baseUrl.replace(/{query}/g, encodeURIComponent(queryStr));
+        return this.httpClient.get<MockPortfolioResponse>(url);
+      }),
+      map((res) => (res.docs ?? []).map((d) => this.normalize(d))),
     );
   }
 
-  toDataSourceFn() {
-    return (query: string): Observable<AbstractData[]> =>
-      query ? this.search(query) : this.getInitialData();
+  /** Map mock-server fields to registry's expected names. */
+  private normalize(d: AbstractData): AbstractData {
+    return {
+      ...d,
+      longName: (d['longName'] ?? d['fullName']) as string,
+    };
+  }
+
+  public getInitialData(serviceContext: Context): Observable<any> {
+    return this.preferenceService.getPreference<TreeNode[]>(
+      serviceContext.emitField,
+      serviceContext.preferenceContext,
+    );
+  }
+
+  public loadInitialData(): Observable<any[]> {
+    throw new Error('Method not implemented.');
   }
 }

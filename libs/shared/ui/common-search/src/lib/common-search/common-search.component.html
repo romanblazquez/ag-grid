@@ -1,0 +1,68 @@
+<form>
+  <mat-form-field [style.width]="serviceContext.inputWidth">
+    <mat-label>{{ placeholder }}</mat-label>
+    <input
+      #commonSearch
+      (focusin)="onFocusIn()"
+      (input)="filterChanged()"
+      (keydown.enter)="onFocusOut()"
+      (keydown.tab)="onFocusOut()"
+      [formControl]="myControl"
+      [matAutocomplete]="auto"
+      [class.error-message]="!!myControl.errors"
+      [value]="myControl.value"
+      aria-label="Text"
+      commonSearchInput
+      matInput
+      type="text"
+    />
+    @if (myControl.errors) {
+      <mat-error>{{ myControl.errors['errors'] }} </mat-error>
+    }
+    @if (clearVisible()) {
+      <mat-icon
+        (mousedown)="clearSearch()"
+        class="clear-button"
+        color="primary"
+        data-cy="clear-button"
+        fontIcon="close"
+        matSuffix
+      >
+      </mat-icon>
+    }
+    <mat-autocomplete
+      #auto="matAutocomplete"
+      (closed)="onFocusOut()"
+      [hideSingleSelectionIndicator]="serviceContext.multiselect"
+      [panelWidth]="serviceContext.panelWidth + 'px'"
+      autoActiveFirstOption
+    >
+      <mat-option disabled style="display: none"></mat-option>
+      @if (!serviceContext.isTreeView) {
+        <fmr-pr000539-grid-view-result
+          (selected)="emitSelectedGridView($event)"
+          [autoToggle]="autoToggle"
+          [clearSelection]="clear"
+          [disableRule]="gridRule"
+          [searchResults]="searchResults"
+          [viewContext]="serviceContext"
+        >
+        </fmr-pr000539-grid-view-result>
+      }
+      @if (serviceContext.isTreeView) {
+        <fmr-pr000539-tree-view-result
+          (selected)="emitSelected($event)"
+          [autoToggle]="autoToggle"
+          [clearSelection]="clear"
+          [detailFields]="serviceContext.detailFields"
+          [disableRule]="treeRule"
+          [displayField]="serviceContext.detailFields[0].name"
+          [emitField]="serviceContext.emitField"
+          [fieldWidths]="serviceContext.fieldWidths"
+          [headers]="serviceContext.detailHeaders"
+          [searchResults]="searchResults"
+        ></fmr-pr000539-tree-view-result>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
+</form>

@@ -1,7 +1,17 @@
+/*
+ * Copyright (c) 2023 FMR Corp.
+ * All Rights Reserved.
+ *
+ * Fidelity Confidential Information.
+ * Created on 10/12/23, 1:50 PM
+ */
+
+/* eslint-disable */
 export default {
   displayName: 'shared-ui-date-picker',
   preset: '../../../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
+  globals: {},
   coverageDirectory: '../../../../coverage/libs/shared/ui/date-picker',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [

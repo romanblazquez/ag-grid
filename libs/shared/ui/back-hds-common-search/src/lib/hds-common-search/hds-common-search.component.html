@@ -1,0 +1,198 @@
+<div
+  class="block relative w-full py-1"
+  [ngClass]="[
+    disabled() ? 'opacity-60 pointer-events-none' : '',
+    csvMode() ? 'hds-csv-mode' : '',
+    containerClass()
+  ]"
+  [style.min-width]="minWidth() || null"
+  [style.max-width]="maxWidth() || null"
+>
+  <p-floatlabel
+    variant="on"
+    [class.hds-common-search__float--active]="labelRaised()"
+  >
+    <div class="hds-search-shell flex w-full items-stretch min-w-0 relative">
+      <p-autocomplete
+        #commonSearch
+        [inputId]="inputId()"
+        [formControl]="myControl"
+        [multiple]="true"
+        [suggestions]="suggestions()"
+        [minLength]="minLengthForInputValue()"
+        [panelStyle]="panelStyle()"
+        [panelStyleClass]="resolvedPanelClass()"
+        [size]="size()"
+        styleClass="hds-search-autocomplete"
+        [class.hds-search-autocomplete--collapsed]="collapsed() && !csvMode()"
+        [class.ng-invalid]="myControl.invalid && myControl.dirty"
+        [class.ng-dirty]="myControl.invalid && myControl.dirty"
+        (completeMethod)="onSearch($event)"
+        (onSelect)="onProxySelect()"
+        (onUnselect)="onChipRemove($any($event))"
+        (onFocus)="csvMode() ? null : onFocusIn()"
+        (onBlur)="csvMode() ? exitCsvMode() : onFocusOut($any($event))"
+        (keydown)="csvMode() ? onCsvKeydown($event) : onInputKeyDown($event)"
+        (onInputKeydown)="csvMode() ? null : onInputKeydownEarly($event)"
+        (paste)="onInputPaste($event)"
+        (dblclick)="onChipsDblClick()"
+        appendTo="body"
+        [dropdown]="false"
+        [showEmptyMessage]="false"
+        [showClear]="false"
+        [addOnBlur]="false"
+        [separator]="separator()"
+        (onClear)="clearSearch()"
+        (onHide)="onPanelHide()"
+      >
+        <ng-template #item>
+          <span class="hidden"></span>
+        </ng-template>
+
+        <ng-template let-value #selecteditem>
+          {{ value }}
+        </ng-template>
+
+        <ng-template #footer>
+          @if (panelVisible()) {
+            <div
+              class="overflow-y-auto overflow-x-hidden"
+              [style.max-height]="panelMaxHeight()"
+              (mousedown)="onPanelMouseDown($event)"
+            >
+              @if (!isTreeView()) {
+                <lib-hds-grid-view-result
+                  #gridResultRef
+                  [viewContext]="serviceContext()!"
+                  [searchResults]="searchResults()"
+                  [autoToggle]="autoToggle()"
+                  [clearSelection]="clearTrigger()"
+                  [preSelected]="currSelected()"
+                  [disableRule]="gridDisableRule"
+                  [disableSelected]="disableSelected()"
+                  [query]="lastTypedQuery()"
+                  [maxSelectedRows]="maxSelectedRows()"
+                  (selected)="onSelected($event)"
+                  (chipRemoved)="onSelectedChipUnchecked($event)"
+                  (escape)="onPanelEscape()"
+                  (tabOut)="onPanelTabOut($event)"
+                />
+              } @else {
+                <lib-hds-tree-view-result
+                  #treeResultRef
+                  [searchResults]="$any(searchResults())"
+                  [detailFields]="serviceContext()!.detailFields"
+                  [displayField]="serviceContext()!.detailFields[0]?.name ?? ''"
+                  [emitField]="serviceContext()!.emitField"
+                  [chipDisplayField]="serviceContext()!.chipDisplayField"
+                  [headers]="serviceContext()!.detailHeaders"
+                  [fieldWidths]="serviceContext()!.fieldWidths"
+                  [autoToggle]="autoToggle()"
+                  [clearSelection]="clearTrigger()"
+                  [preSelected]="$any(currSelected())"
+                  [disableRule]="treeDisableRule"
+                  [disableSelected]="disableSelected()"
+                  [query]="lastTypedQuery()"
+                  [maxSelectedRows]="maxSelectedRows()"
+                  (selected)="onSelected($event)"
+                  (chipRemoved)="onSelectedChipUnchecked($event)"
+                  (escape)="onPanelEscape()"
+                  (tabOut)="onPanelTabOut($event)"
+                />
+              }
+            </div>
+          }
+        </ng-template>
+      </p-autocomplete>
+
+      @if (collapsed() && !csvMode()) {
+        @if (showAsSummary()) {
+          <!-- Collapsed summary: "N Items" with tooltip -->
+          <span
+            class="hds-summary-chip"
+            [pTooltip]="overflowTooltip()"
+            tooltipPosition="top"
+            (dblclick)="onChipsDblClick()"
+          >{{ summaryLabel() }}</span>
+        } @else {
+          <!-- Individual chips with remove icon -->
+          <div
+            class="hds-chips-container"
+            (dblclick)="onChipsDblClick()"
+          >
+            @for (chip of chipsValue(); track chip) {
+              <span class="hds-chip">
+                <span class="hds-chip-label">{{ chip }}</span>
+                <span
+                  class="hds-chip-remove pi pi-times"
+                  (click)="onSelectedChipUnchecked(chip); $event.stopPropagation()"
+                ></span>
+              </span>
+            }
+          </div>
+        }
+      }
+
+      @if (showClear() && chipsValue().length > 1 && !csvMode()) {
+        <button
+          type="button"
+          class="hds-search-clear-button"
+          tabindex="-1"
+          (mousedown)="$event.preventDefault()"
+          (click)="clearSearch()"
+        >
+          <span class="pi pi-times" aria-hidden="true"></span>
+        </button>
+      }
+
+      @if (csvMode()) {
+        <div
+          class="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 z-20"
+          (mousedown)="$event.preventDefault()"
+        >
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+            (click)="copyCsv()"
+          >
+            <span class="pi pi-copy text-xs"></span> Copy
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+            (click)="cutCsv()"
+          >
+            <span class="pi pi-clipboard text-xs"></span> Cut
+          </button>
+        </div>
+      }
+
+      @if (dropdown() && !csvMode()) {
+        <button
+          type="button"
+          class="hds-search-dropdown-button"
+          tabindex="-1"
+          [attr.aria-controls]="inputId()"
+          [attr.aria-expanded]="panelVisible()"
+          [disabled]="disabled()"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggleDropdown($event)"
+        >
+          <span class="pi pi-chevron-down" aria-hidden="true"></span>
+        </button>
+      }
+    </div>
+    <label [for]="inputId()" (click)="focusInput()">{{
+      label() || placeholder()
+    }}</label>
+
+  </p-floatlabel>
+
+  @if (errorMessage()) {
+    <p-message
+      severity="error"
+      [text]="errorMessage()!"
+      styleClass="mt-1 block text-xs"
+    />
+  }
+</div>

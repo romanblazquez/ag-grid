@@ -6,19 +6,14 @@ import {
   Input,
   Output,
 } from '@angular/core';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
-import { CdkConnectedOverlay, CdkOverlayOrigin } from '@angular/cdk/overlay';
 import { ChipContext } from '../model/chip-context.model';
 
 @Component({
-  selector: 'tp-selection-chips',
+  selector: 'fmr-pr000539-selection-chips',
   templateUrl: './selection-chips.component.html',
   styleUrls: ['./selection-chips.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
-  imports: [MatChipsModule, MatIconModule, MatCardModule, CdkConnectedOverlay, CdkOverlayOrigin],
+  standalone: false,
 })
 export class SelectionChipsComponent {
   public isOpen: boolean[] = [];
@@ -29,16 +24,16 @@ export class SelectionChipsComponent {
   @Input()
   public set chipContexts(contexts: ChipContext[]) {
     this.chips = contexts;
-    this.chips.forEach(() => this.isOpen.push(false));
+    this.chips.forEach((chip) => this.isOpen.push(false));
     this.cd.detectChanges();
   }
   public chips: ChipContext[] = [];
+  @Output()
+  public removeItem: EventEmitter<{ context: string; value: string }> =
+    new EventEmitter<{ context: string; value: string }>();
 
   @Output()
-  public removeItem = new EventEmitter<{ context: string; value: string }>();
-
-  @Output()
-  public removeContext = new EventEmitter<string>();
+  public removeContext: EventEmitter<string> = new EventEmitter<string>();
 
   public getChipLabel(name: string, item: string): string {
     return `${name}: ${item}`;
@@ -57,11 +52,11 @@ export class SelectionChipsComponent {
   }
 
   public updateIsOpen(index: number): void {
-    this.isOpen.forEach((_, i) => (this.isOpen[i] = false));
+    this.isOpen.forEach((o, index) => (this.isOpen[index] = false));
     this.isOpen[index] = !this.isOpen[index];
   }
 
-  public enteredOverlay(_i: number): void {
+  public enteredOverlay(i: number): void {
     this.hasEnteredOverlay = true;
   }
 

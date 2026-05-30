@@ -1,6 +1,6 @@
 import { GridViewModel } from '../../../models/grid-view.model';
 import { v4 as uuidv4 } from 'uuid';
-import { GridState } from 'ag-grid-community';
+import { GridState } from '@ag-grid-community/core';
 import {
   sanitizeGridState,
   getEmptyGridState,

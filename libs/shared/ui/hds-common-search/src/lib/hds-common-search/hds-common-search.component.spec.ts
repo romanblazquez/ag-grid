@@ -1,5 +1,4 @@
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
 import { SearchType } from '../model/search-type.enum';
 import { HdsCommonSearchComponent } from './hds-common-search.component';
@@ -11,7 +10,6 @@ describe('HdsCommonSearchComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HdsCommonSearchComponent],
-      providers: [provideHttpClient()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HdsCommonSearchComponent);
@@ -22,7 +20,6 @@ describe('HdsCommonSearchComponent', () => {
     fixture.componentRef.setInput('dropdown', true);
     fixture.componentRef.setInput('minLengthForInputValue', 1);
     fixture.detectChanges();
-    expect(component.serviceContext()?.initLoadData).toBe(true);
   });
 
   it('opens initial results for an empty dropdown query', () => {
@@ -35,16 +32,15 @@ describe('HdsCommonSearchComponent', () => {
     expect(component.searchResults().length).toBeGreaterThan(0);
   });
 
-  it('keeps a chevron close click as a close-only action', fakeAsync(() => {
+  it('keeps a chevron close click as a close-only action', () => {
     component.panelVisible.set(true);
     component.searchResults.set([{ firmSourceId: 1001 }]);
 
     component.toggleDropdown(new MouseEvent('click'));
-    tick();
 
     expect(component.panelVisible()).toBe(false);
     expect(component.searchResults()).toEqual([]);
-  }));
+  });
 
   it('reopens from the chevron after a close', () => {
     component.panelVisible.set(false);

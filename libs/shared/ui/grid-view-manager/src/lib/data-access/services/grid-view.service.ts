@@ -7,8 +7,9 @@ import {
   GRID_VIEW_CONSTRAINTS,
 } from '../../models/grid-view-state.model';
 import { v4 as uuidv4 } from 'uuid';
-import { GridState } from 'ag-grid-community';
+import { GridState } from '@ag-grid-community/core';
 import { sanitizeGridState } from '../grid-state/grid-state.utils';
+import { safeDeepClone, safeJsonParse } from '@fmr-pr000539/shared/util/common';
 import { GridViewStorageService } from './grid-view-storage.service';
 
 @Injectable({
@@ -81,7 +82,7 @@ export class GridViewService {
         if (existingDraft) {
           draft = {
             ...existingDraft,
-            gridState: structuredClone(draftGridState) as GridState,
+            gridState: safeDeepClone(draftGridState) as GridState,
             draftSourceViewId: sourceViewId,
             name: draftName,
             updatedAt: now,
@@ -95,7 +96,7 @@ export class GridViewService {
             isSelected: true,
             isDraft: true,
             draftSourceViewId: sourceViewId,
-            gridState: structuredClone(draftGridState) as GridState,
+            gridState: safeDeepClone(draftGridState) as GridState,
             createdAt: now,
             updatedAt: now,
           };
@@ -164,7 +165,7 @@ export class GridViewService {
    *
    * - If source is a regular user view: updates it in-place, removes the draft,
    *   returns { committed: true, sourceView }.
-   * - If source is a system default (preset) or source not found:
+   * - If source is a system default (iConfig preset) or source not found:
    *   returns { committed: false, draftView, sourceView? } so the caller can
    *   prompt "Save As New View" pre-filled with the source name (minus the draft
    *   suffix). The preset is never mutated.
@@ -189,7 +190,7 @@ export class GridViewService {
           (v) => v.id === draftView.draftSourceViewId,
         );
 
-        // System defaults are read-only — cannot be overwritten.
+        // System defaults (iConfig presets) are read-only — cannot be overwritten.
         // Return draftView + sourceView to let the caller pre-fill "Save As New View".
         if (!sourceView || sourceView.isSystemDefault) {
           return of({ committed: false as const, draftView, sourceView });
@@ -197,7 +198,7 @@ export class GridViewService {
 
         const updatedSource: GridViewModel = {
           ...sourceView,
-          gridState: structuredClone(draftView.gridState) as GridState,
+          gridState: safeDeepClone(draftView.gridState) as GridState,
           updatedAt: new Date(),
           isSelected: true,
         };
@@ -246,13 +247,13 @@ export class GridViewService {
         );
 
         const now = new Date();
-        let gridState = view.gridState;
-        if (typeof gridState === 'string') {
-          gridState = JSON.parse(gridState as string) as GridState;
+        if (typeof view.gridState === 'string') {
+          view.gridState = safeJsonParse(view.gridState) as GridState;
         }
 
         // Clone gridState before sanitizing to avoid mutating the input
-        const clonedGridState = structuredClone(gridState);
+        // This is defensive programming - input might be immutable (NgRx state)
+        const clonedGridState = safeDeepClone(view.gridState);
 
         const newView: GridViewModel = {
           ...view,
@@ -317,7 +318,7 @@ export class GridViewService {
 
         const updatedView: GridViewModel = {
           ...view,
-          gridState: structuredClone(view.gridState),
+          gridState: safeDeepClone(view.gridState),
           updatedAt: new Date(),
         };
 
@@ -328,13 +329,13 @@ export class GridViewService {
           if (updatedView.isDefault && v.isDefault) {
             return {
               ...v,
-              gridState: structuredClone(v.gridState),
+              gridState: safeDeepClone(v.gridState),
               isDefault: false,
             };
           }
           return {
             ...v,
-            gridState: structuredClone(v.gridState),
+            gridState: safeDeepClone(v.gridState),
           };
         });
 

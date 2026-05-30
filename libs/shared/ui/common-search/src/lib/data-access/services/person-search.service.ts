@@ -1,94 +1,120 @@
-import { inject, Injectable, InjectionToken } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, map, Observable, of, tap } from 'rxjs';
-import { AbstractData, DataAccessFacadeService } from '@trade-platform/shared/ui/hds-common-search';
+import { BehaviorSubject, map, mergeMap, Observable, tap } from 'rxjs';
+import { PersonCacheService, PersonRecord } from '@trade-platform/shared/data-access';
+import { Person } from '../../model/person.model';
 import { SearchService } from './search.service';
+import { Context } from '../../model/context.model';
+import { PreferenceService } from './preference.service';
 import { bestMatchSortFn } from '../../util/sorting-util';
+import { ApiName, ServiceConfig } from '../../model/service-config.model';
+import { svcConfig } from '../../model/external-services.constant';
 
-export const PERSON_SERVICE_URL = new InjectionToken<string>(
-  'PERSON_SERVICE_URL',
-);
-
-export interface Person {
-  personSourceId: string;
-  fullName: string;
-  firstName?: string;
-  lastName?: string;
-  desk: string;
-  corpId?: string;
-  [key: string]: unknown;
+/** Shape returned by GET /api/persons/traders */
+interface MockPersonsResponse {
+  persons?: MockPerson[];
 }
 
-interface PersonServiceResponse {
-  persons: Person[];
+interface MockPerson {
+  personSourceId?: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  desk?: string;
+  corpId?: string;
+  initials?: string;
+  reportingName?: string;
+  [key: string]: unknown;
 }
 
 @Injectable()
 export class PersonSearchService extends SearchService<Person> {
-  override persistedData$: BehaviorSubject<Person[]> = new BehaviorSubject<
-    Person[]
-  >([]);
+  public apiRecord: Record<ApiName, ServiceConfig> = svcConfig;
+  public override persistedData$: BehaviorSubject<Person[]> = new BehaviorSubject<Person[]>([]);
 
-  private readonly http = inject(HttpClient);
-  private readonly url = inject(PERSON_SERVICE_URL, { optional: true });
-  private readonly dataCache = inject(DataAccessFacadeService);
+  public constructor(
+    private readonly http: HttpClient,
+    private readonly preferenceService: PreferenceService,
+    private readonly personCacheService: PersonCacheService,
+  ) {
+    super();
+  }
 
-  search(query: string): Observable<Person[]> {
-    return this.getAllPersons().pipe(
+  public search(query: string, serviceContext: Context): Observable<Person[]> {
+    const dataPool: Observable<Person[]> = this.persistedData$.value.length
+      ? this.persistedData$.asObservable()
+      : this.getTraders();
+
+    const filterMethod = serviceContext.multiselect
+      ? this.filterByQueryMultiselect
+      : this.filterByQuerySingleSelect;
+
+    return dataPool.pipe(
       map((persons) =>
-        this.filterByQueryMultiselect(persons, query, [
-          (p) => p.fullName,
-          (p) => p.firstName ?? '',
-          (p) => p.lastName ?? '',
-          (p) => p.corpId ?? '',
-        ]).sort(bestMatchSortFn(query, (p) => p.fullName)),
+        filterMethod(persons, query, [
+          (person) => person.firstName,
+          (person) => person.lastName,
+          (person) => person.corpId,
+          (person) => person.initials,
+          (person) => person.reportingName,
+        ]).sort(bestMatchSortFn(query, (person) => person.reportingName)),
       ),
     );
   }
 
-  loadInitialData(): Observable<Person[]> {
-    return this.getAllPersons().pipe(
-      tap((persons) => this.persistedData$.next(persons)),
+  public loadInitialData(context?: Context): Observable<Person[]> {
+    return this.getTraders().pipe(
+      tap((persons) => {
+        this.personCacheService.setPersons(this.toPersonRecords(persons));
+        this.persistedData$.next(persons);
+      }),
     );
   }
 
-  getInitialData(): Observable<Person[]> {
-    const cachedValues = this.dataCache.getPreference<unknown>('trader');
-    if (!cachedValues.length) {
-      return this.search('');
-    }
-
-    const persisted = this.persistedData$.value;
-    if (persisted.length > 0) {
-      return of(
-        this.dataCache.getPreference<Person>(
-          'trader',
-          persisted,
-          'personSourceId',
-        ),
-      );
-    }
-
-    return this.loadInitialData().pipe(
-      map(() =>
-        this.dataCache.getPreference<Person>(
-          'trader',
-          this.persistedData$.value,
-          'personSourceId',
+  public getTraders(): Observable<Person[]> {
+    return this.apiRecord.GetTraders.url.pipe(
+      mergeMap((url) =>
+        this.http.get<MockPersonsResponse>(url).pipe(
+          map((res) => this.normaliseMockPersons(res.persons ?? [])),
         ),
       ),
     );
   }
 
-  getAllPersons(): Observable<Person[]> {
-    if (!this.url) return of([]);
-    return this.http
-      .get<PersonServiceResponse>(`${this.url}/traders`)
-      .pipe(map((res) => res.persons ?? []));
+  public override getInitialData(serviceContext: Context): Observable<Person[]> {
+    return this.preferenceService.getPreference<Person>(
+      serviceContext.emitField,
+      serviceContext.preferenceContext,
+      this.persistedData$,
+    );
   }
 
-  toDataSourceFn() {
-    return (query: string): Observable<AbstractData[]> =>
-      query ? this.search(query) : this.getInitialData();
+  private normaliseMockPersons(raw: MockPerson[]): Person[] {
+    return raw.map((p, i) => {
+      const firstName = p.firstName ?? '';
+      const lastName = p.lastName ?? '';
+      const initials =
+        p.initials ??
+        `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+      const reportingName = p.reportingName ?? p.fullName ?? `${firstName} ${lastName}`.trim();
+      const corpId = p.corpId ?? p.personSourceId ?? '';
+      return {
+        ...p,
+        personId: i,
+        corpId,
+        firstName,
+        lastName,
+        initials,
+        reportingName,
+      } as Person;
+    });
+  }
+
+  private toPersonRecords(persons: Person[]): PersonRecord[] {
+    return persons.map((p) => ({
+      sourceId: p.corpId,
+      fullName: p.reportingName ?? `${p.firstName} ${p.lastName}`.trim(),
+      initials: p.initials,
+    }));
   }
 }

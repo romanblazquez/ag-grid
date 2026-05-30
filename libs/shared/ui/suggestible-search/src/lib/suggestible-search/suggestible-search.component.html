@@ -1,4 +1,12 @@
-<tp-search-bar
+<!--
+  ~ Copyright (c) 2023 FMR Corp.
+  ~ All Rights Reserved.
+  ~
+  ~ Fidelity Confidential Information.
+  ~ Created on 10/12/23, 1:50 PM
+  -->
+
+<fmr-pr000539-search-bar
   (clearEvent)="clearSearch($event)"
   (searchEvent)="getSuggestions($event)"
   (selectEvent)="selectSuggestion($event)"
@@ -20,4 +28,4 @@
   [searchResults]="suggestibleSearchResults | async"
   [searchTouched]="searchTouched"
   [useMatError]="useMatError"
-></tp-search-bar>
+></fmr-pr000539-search-bar>

@@ -1,3 +1,4 @@
+/* eslint-disable */
 export default {
   displayName: 'shared-ui-common-search',
   preset: '../../../../jest.preset.js',

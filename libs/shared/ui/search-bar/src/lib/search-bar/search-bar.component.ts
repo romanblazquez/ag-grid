@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2023 FMR Corp.
+ * All Rights Reserved.
+ *
+ * Fidelity Confidential Information.
+ * Created on 10/12/23, 1:49 PM
+ */
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,6 +15,7 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   MatAutocompleteModule,
@@ -22,11 +31,11 @@ import { debounceTime, filter, tap } from 'rxjs/operators';
 
 /**
  * Reusable and extensible presentation component for all intuitive search capabilities.
- * It emits an event for all search actions and displays the results based on input attributes.
- * Includes an optional default results drop-down and an optional clear-text button.
+ * It emits an event for all search actions and displays the results based off input attribute.
+ * It includes an optional default results to show via drop down and an optional clear text button.
  */
 @Component({
-  selector: 'tp-search-bar',
+  selector: 'fmr-pr000539-search-bar',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -44,28 +53,44 @@ import { debounceTime, filter, tap } from 'rxjs/operators';
 export class SearchBarComponent<T> implements OnInit {
   public searchFormControl = new FormControl();
   public isInputInFocus = false;
-
-  @Input() public placeholderText = 'Search';
-  @Input() public disabled = false;
-  @Input() public hideArrowDropDown = false;
-  @Input() public enableClearButton = true;
-  @Input() public debounceTime = 300;
-  @Input() public searchResults: Array<T> | undefined | null;
-  @Input() public autoSelectFirstOptionOnUpdate = false;
-  @Input() public searchResultColumns: Array<string> | undefined;
-  @Input() public searchResultColumnsToolTip: Array<string> | undefined;
-  @Input() public searchResultColumnWidths: Array<number> | undefined;
-  @Input() public searchBarWidth = '200';
-  @Input() public dropDownWidth: string | undefined = this.searchBarWidth;
-  @Input() public displayFunction: ((suggestion: T) => string) | undefined;
-  @Input() public errorMessage: string | undefined;
-  @Input() public useMatError: boolean | undefined;
-
-  @Output() public searchEvent = new EventEmitter<string>();
-  @Output() public clearEvent = new EventEmitter<string>();
-  @Output() public selectEvent = new EventEmitter<T>();
-  @Output() public tooltipOpen = new EventEmitter<string>();
-
+  @Input()
+  public placeholderText = 'Search';
+  @Input()
+  public disabled = false;
+  @Input()
+  public hideArrowDropDown = false;
+  @Input()
+  public enableClearButton = true;
+  @Input()
+  public debounceTime = 300;
+  @Input()
+  public searchResults: Array<T> | undefined | null;
+  @Input()
+  public autoSelectFirstOptionOnUpdate = false;
+  @Input()
+  public searchResultColumns: Array<string> | undefined;
+  @Input()
+  public searchResultColumnsToolTip: Array<string> | undefined;
+  @Input()
+  public searchResultColumnWidths: Array<number> | undefined;
+  @Input()
+  public searchBarWidth = '200';
+  @Input()
+  public dropDownWidth: string | undefined = this.searchBarWidth;
+  @Input()
+  public displayFunction: ((suggestion: T) => string) | undefined;
+  @Input()
+  public errorMessage: string | undefined;
+  @Input()
+  public useMatError: boolean | undefined;
+  @Output()
+  public searchEvent = new EventEmitter<string>();
+  @Output()
+  public clearEvent = new EventEmitter<string>();
+  @Output()
+  public selectEvent = new EventEmitter<T>();
+  @Output()
+  public tooltipOpen = new EventEmitter<string>();
   @ViewChild(MatAutocompleteTrigger, { static: false })
   public matAutocompleteTrigger: MatAutocompleteTrigger | undefined;
 
@@ -106,7 +131,7 @@ export class SearchBarComponent<T> implements OnInit {
   }
 
   @Input()
-  public set clearSymbol(clear: unknown) {
+  public set clearSymbol(clear: any) {
     if (clear) {
       this.clearSearch(new Event(''));
     }
@@ -137,7 +162,8 @@ export class SearchBarComponent<T> implements OnInit {
 
   public clearSearch(event: Event): void {
     event.stopPropagation();
-    this.clearEvent.emit(this.searchFormControl.value as string);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    this.clearEvent.emit(this.searchFormControl.value);
     this.searchFormControl.setValue('');
     this.searchResults = [];
   }

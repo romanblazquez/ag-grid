@@ -73,43 +73,17 @@ export class HdsGridViewResultComponent {
     this.disableRule()(row) || (this.disableSelected() && row.selected);
 
   constructor() {
-    // Rebuild rows only when search results change. Reading preSelected with
-    // untracked() prevents this effect from re-running (and rebuilding all row
-    // objects) every time an internal selection updates the parent's currSelected.
     effect(() => {
       const results = this.searchResults();
       const emitKey = this.viewContext().emitField;
       const preKeys = new Set(
-        untracked(this.preSelected).map((d) => d[emitKey] as string),
+        this.preSelected().map((d) => d[emitKey] as string),
       );
       untracked(() => {
         this.rows.set(
           results.map((data) => ({
             selected: preKeys.has(data[emitKey] as string),
             data,
-          })),
-        );
-      });
-    });
-
-    // Lightweight sync: when preSelected changes from outside (e.g. programmatic
-    // select, reset), update row selected states without rebuilding all objects.
-    // The needsChange guard avoids creating new row objects when the update is a
-    // no-op (common case: internal toggle() already set the correct state).
-    effect(() => {
-      const pre = this.preSelected();
-      const emitKey = this.viewContext().emitField;
-      const preKeys = new Set(pre.map((d) => d[emitKey] as string));
-      untracked(() => {
-        const current = this.rows();
-        const needsChange = current.some(
-          (r) => r.selected !== preKeys.has(r.data[emitKey] as string),
-        );
-        if (!needsChange) return;
-        this.rows.set(
-          current.map((r) => ({
-            ...r,
-            selected: preKeys.has(r.data[emitKey] as string),
           })),
         );
       });

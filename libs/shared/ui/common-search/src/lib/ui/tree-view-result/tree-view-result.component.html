@@ -1,0 +1,76 @@
+<mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+  <mat-tree-node
+    *matTreeNodeDef="let node"
+    [class.column-header]="node.header"
+    class="search-results"
+    matTreeNodePadding
+    matTreeNodePaddingIndent="10"
+    matTreeNodeToggle
+  >
+    <button disabled mat-icon-button></button>
+    @if (!node.header) {
+      <mat-checkbox
+        (change)="leafItemSelectionToggle(node, false)"
+        [checked]="checklistSelection.isSelected(node.id)"
+        [disabled]="node.disabled"
+        class="checklist-leaf-node"
+        color="primary"
+        commonSearchCheckbox
+      >
+      </mat-checkbox>
+    }
+    @for (
+      item of filterInvisibleItems(node.items);
+      track item;
+      let i = $index
+    ) {
+      <div
+        [ngClass]="{ disabled: node.header || node.disabled }"
+        [ngStyle]="{ 'font-size': node.header ? '16px' : '14px' }"
+        [style.width]="fieldWidths[item['name']] + '%'"
+        class="search-result-column"
+        data-cy="search-results"
+      >
+        {{ item['value'] }}
+      </div>
+    }
+  </mat-tree-node>
+
+  <mat-tree-node
+    *matTreeNodeDef="let node; when: hasChild"
+    class="search-results"
+    matTreeNodePadding
+    matTreeNodePaddingIndent="10"
+  >
+    <button
+      [attr.aria-label]="'toggle ' + node.filename"
+      mat-icon-button
+      matTreeNodeToggle
+    >
+      <mat-icon class="mat-icon-rtl-mirror">
+        {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+      </mat-icon>
+    </button>
+    <mat-checkbox
+      (change)="itemSelectionToggle(node, false)"
+      [checked]="descendantsAllSelected(node)"
+      [indeterminate]="descendantsPartiallySelected(node)"
+      color="primary"
+      commonSearchCheckbox
+    >
+    </mat-checkbox>
+    @for (
+      item of filterInvisibleItems(node.items);
+      track item;
+      let i = $index
+    ) {
+      <div
+        [style.width]="fieldWidths[item['name']] + '%'"
+        class="search-result-column"
+        data-cy="search-results"
+      >
+        {{ item['value'] }}
+      </div>
+    }
+  </mat-tree-node>
+</mat-tree>

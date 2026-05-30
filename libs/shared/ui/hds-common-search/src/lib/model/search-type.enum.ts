@@ -1,7 +1,12 @@
 export enum SearchType {
-  Symbol = 'symbol',
-  FundPm = 'fundPm',
-  Broker = 'broker',
-  Trader = 'trader',
-  InstrumentType = 'instrumentType',
+  Symbol = 'Symbol',
+  FundPm = 'FundPm',
+  Broker = 'Broker',
+  Trader = 'Trader',
+  InstrumentType = 'InstrumentType',
+  ParentBroker = 'ParentBroker',
+  PmAndTraders = 'PmAndTraders',
+  Team = 'Team',
+  TraderTeam = 'TraderTeam',
+  StructureType = 'StructureType',
 }

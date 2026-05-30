@@ -1,0 +1,15 @@
+.search-result-column {
+  display: inline-block;
+  text-align: left;
+  height: 100%;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  margin-right: 5px;
+}
+
+.disabled {
+  pointer-events: none; // <---- key point
+  opacity: 0.3;
+}

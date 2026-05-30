@@ -1,0 +1,75 @@
+:host {
+  display: block;
+}
+
+::ng-deep .hds-tree {
+  .p-tree {
+    background: transparent;
+    padding: 0;
+    border: 0;
+  }
+
+  .p-tree-node-content {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.1s;
+
+    &:hover {
+      background: var(--p-surface-100, rgba(0, 0, 0, 0.04));
+    }
+  }
+
+  .hds-tree-disabled-row {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  // AG Grid-style checkbox sizing
+  .p-tree-node-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+  }
+
+  // Indeterminate/partial state — AG Grid style (solid fill + horizontal dash)
+  .p-tree-node-checkbox[data-p-partialchecked="true"],
+  p-checkbox[data-p-partialchecked="true"] {
+    [data-pc-section="input"],
+    .p-checkbox-box {
+      background: var(--p-primary-color, #3b82f6) !important;
+      border-color: var(--p-primary-color, #3b82f6) !important;
+    }
+
+    // The minus SVG icon — white and visible like AG Grid's dash
+    svg[data-p-icon="minus"] {
+      color: #fff;
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  // Parent group rows — slightly bolder label like AG Grid
+  .p-tree-node-content:has(+ .p-tree-node-children) {
+    .p-tree-node-label {
+      font-weight: 500;
+    }
+  }
+
+  // Indentation like AG Grid tree
+  .p-tree-node-children {
+    padding-left: 1.25rem;
+  }
+
+  // Expand/collapse toggle
+  .p-tree-node-toggle-button {
+    width: 20px;
+    height: 20px;
+    margin-right: 4px;
+    border-radius: 3px;
+    transition: background-color 0.1s;
+
+    &:hover {
+      background: var(--p-surface-200, rgba(0, 0, 0, 0.08));
+    }
+  }
+}

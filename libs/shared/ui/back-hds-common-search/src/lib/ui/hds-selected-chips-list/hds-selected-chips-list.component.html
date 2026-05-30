@@ -1,0 +1,38 @@
+@if (items().length > 0) {
+  <div
+    #scrollContainer
+    class="hds-selected-chips-list border-b border-surface-200 dark:border-surface-700"
+    [class.overflow-y-auto]="maxRows() > 0 && items().length > maxRows()"
+    [style.max-height]="maxRows() > 0 ? maxRows() * 2.5 + 'rem' : null"
+  >
+    @for (item of items(); track rowKey(item)) {
+      <div
+        class="flex items-center gap-2 px-3 py-2 bg-primary-50/40 dark:bg-primary-900/10 cursor-pointer hover:bg-primary-100/60 dark:hover:bg-primary-900/20 transition-colors"
+        (click)="removeItem(item)"
+        role="button"
+        [attr.aria-label]="
+          'Remove ' + getCell(item, visibleFields()[0]?.name ?? '')
+        "
+      >
+        <p-checkbox
+          [inputId]="'hds-chip-' + rowKey(item)"
+          [binary]="true"
+          [ngModel]="true"
+          (click)="$event.stopPropagation(); removeItem(item)"
+          class="shrink-0 pointer-events-none"
+        />
+        <div class="flex flex-1 min-w-0">
+          @for (field of visibleFields(); track field.name) {
+            <span
+              class="truncate text-sm"
+              [ngStyle]="{ width: fieldWidths()[field.name] + '%' }"
+              [title]="getCell(item, field.name)"
+            >
+              {{ getCell(item, field.name) }}
+            </span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

@@ -1,0 +1,6 @@
+// Grid View Manager Shared Mixins
+@mixin gvm-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

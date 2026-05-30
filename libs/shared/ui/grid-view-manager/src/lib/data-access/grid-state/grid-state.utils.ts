@@ -1,18 +1,26 @@
 /* eslint-disable */
-import { GridApi } from 'ag-grid-community';
+import { AdvancedFilterModel, GridApi } from '@ag-grid-community/core';
 import { CustomGridState } from './gridState';
 
 export type { CustomGridState };
 
 /**
- * Sanitizes a custom grid state by removing invalid column IDs and ensuring
- * proper data types throughout the state object.
+ * Applies a custom grid state to the AG Grid instance.
+ * This helper function restores saved grid configuration including:
+ * - Column order, sizing, and pinning
+ * - Sort model
+ * - Filter model
+ * - Sidebar visibility
+ * - Aggregation settings
+ * - Row grouping
+ * - Pivot configuration
+ * - Pagination state
  */
 export function sanitizeGridState(
   gridState: CustomGridState,
   validColIds: Set<string>,
 ): CustomGridState {
-  // Deep clone to avoid mutating input state
+  // Deep clone to avoid mutating immutable NgRx state
   const sanitized: CustomGridState = structuredClone(gridState);
 
   const removeUndefined = <T>(
@@ -23,10 +31,12 @@ export function sanitizeGridState(
     );
   };
 
+  // Helper function to remove undefined/null values and validate column objects
   const isValidColumn = (col: any): boolean => {
     return col && col.colId && validColIds.has(col.colId);
   };
 
+  // Remove nulls and invalids from arrays, and filter out undefined values
   if (sanitized.sort?.sortModel) {
     sanitized.sort.sortModel = removeUndefined(sanitized.sort.sortModel).filter(
       isValidColumn,
@@ -88,28 +98,34 @@ export function sanitizeGridState(
     ).filter((colId: string) => colId && validColIds.has(colId));
   }
 
+  // Sanitize columnGroup.openColumnGroupIds (filter invalid group IDs and remove undefined)
   if (sanitized.columnGroup?.openColumnGroupIds) {
     sanitized.columnGroup.openColumnGroupIds = removeUndefined(
       sanitized.columnGroup.openColumnGroupIds,
     ).filter((groupId: string) => groupId && validColIds.has(groupId));
   }
 
+  // Sanitize rowGroupExpansion.expandedRowGroupIds (only remove undefined, don't validate against colIds)
+  // These are data row identifiers, not column IDs
   if (sanitized.rowGroupExpansion?.expandedRowGroupIds) {
     sanitized.rowGroupExpansion.expandedRowGroupIds = removeUndefined(
       sanitized.rowGroupExpansion.expandedRowGroupIds,
     ).filter((groupId: string) => groupId);
   }
 
+  // Remove undefined values from range selection
   if (sanitized.rangeSelection?.cellRanges) {
     sanitized.rangeSelection.cellRanges = removeUndefined(
       sanitized.rangeSelection.cellRanges,
     );
   }
 
+  // Remove undefined values from row selection
   if (sanitized.rowSelection && Array.isArray(sanitized.rowSelection)) {
     sanitized.rowSelection = removeUndefined(sanitized.rowSelection);
   }
 
+  // Sanitize pivot mode - ensure it's a boolean
   if (
     sanitized.pivot?.pivotMode !== undefined &&
     typeof sanitized.pivot.pivotMode !== 'boolean'
@@ -117,6 +133,7 @@ export function sanitizeGridState(
     delete sanitized.pivot.pivotMode;
   }
 
+  // Sanitize expandAll - ensure it's a boolean
   if (
     sanitized.expandAll !== undefined &&
     typeof sanitized.expandAll !== 'boolean'
@@ -124,6 +141,7 @@ export function sanitizeGridState(
     sanitized.expandAll = false;
   }
 
+  // Sanitize pagination values - ensure they're valid numbers
   if (sanitized.pagination) {
     if (
       sanitized.pagination.page !== undefined &&
@@ -141,6 +159,7 @@ export function sanitizeGridState(
     }
   }
 
+  // Sanitize sidebar values
   if (sanitized.sideBar) {
     if (
       sanitized.sideBar.visible !== undefined &&
@@ -156,6 +175,7 @@ export function sanitizeGridState(
     }
   }
 
+  // Sanitize scroll values - ensure they're valid numbers
   if (sanitized.scroll) {
     if (
       sanitized.scroll.top !== undefined &&
@@ -171,6 +191,7 @@ export function sanitizeGridState(
     }
   }
 
+  // Sanitize focused cell - validate structure and column ID
   if (sanitized.focusedCell) {
     if (
       sanitized.focusedCell.colId &&
@@ -186,28 +207,35 @@ export function sanitizeGridState(
     }
   }
 
+  // Clean up nested undefined values within objects
   Object.keys(sanitized).forEach((key) => {
     const value = sanitized[key as keyof CustomGridState];
 
+    // Remove top-level undefined properties
     if (value === undefined) {
       delete sanitized[key as keyof CustomGridState];
-    } else if (
+    }
+    // Clean up nested undefined properties within objects (but keep the parent if it has valid data)
+    else if (
       value !== null &&
       typeof value === 'object' &&
       !Array.isArray(value)
     ) {
       const nestedObj = value as any;
+      // Remove undefined properties from nested objects
       Object.keys(nestedObj).forEach((nestedKey) => {
         if (nestedObj[nestedKey] === undefined) {
           delete nestedObj[nestedKey];
         }
       });
+      // Only remove the parent if it has no properties left
       if (Object.keys(nestedObj).length === 0) {
         delete sanitized[key as keyof CustomGridState];
       }
     }
   });
 
+  // Ensure expandAll has a default value if it's missing
   if (sanitized.expandAll === undefined) {
     sanitized.expandAll = false;
   }
@@ -233,22 +261,27 @@ export function applyGridStateHelper(
   }
 
   try {
+    // Get all valid column IDs from the grid
     const allColumns = gridApi.getColumns();
     const validColIds = new Set(allColumns?.map((col) => col.getColId()) || []);
 
     if (typeof gridState === 'string') {
       gridState = JSON.parse(gridState);
     }
+    // Sanitize the grid state before applying
     const sanitizedState = sanitizeGridState(gridState, validColIds);
 
+    // Helper function to validate column objects
     const isValidColumn = (col: any): boolean => {
       return col && col.colId && validColIds.has(col.colId);
     };
 
+    // Helper function to filter valid column IDs
     const filterValidColIds = (colIds: string[] | undefined): string[] => {
       return (colIds || []).filter((colId) => colId && validColIds.has(colId));
     };
 
+    // Clear all existing state that could interfere with new state application
     gridApi.applyColumnState({
       defaultState: {
         rowGroup: null,
@@ -262,19 +295,24 @@ export function applyGridStateHelper(
     gridApi.collapseAll();
     gridApi.setFilterModel(null);
 
+    // Reset sidebar to default state
     gridApi.setSideBarVisible(true);
     gridApi.setSideBarPosition('right');
     gridApi.closeToolPanel();
 
+    // Reset pivot mode
     gridApi.setGridOption('pivotMode', false);
 
+    // Reset pagination to first page
     gridApi.paginationGoToPage(0);
 
+    // Apply row grouping - handle both setting groups and removing all groups
     if (sanitizedState.rowGroup?.groupColIds !== undefined) {
       const validGroupColIds = filterValidColIds(
         sanitizedState.rowGroup.groupColIds,
       );
 
+      // If there are columns to group, apply grouping
       if (validGroupColIds.length > 0) {
         const groupState = validGroupColIds.map((colId: string) => ({
           colId,
@@ -286,13 +324,15 @@ export function applyGridStateHelper(
         allColumnsAfterGroup?.forEach((col) => validColIds.add(col.getColId()));
       }
 
+      // Always clear row grouping from all columns not in the group list
+      // This handles both adding groups and removing all groups
       const nonGroupColIds = Array.from(validColIds).filter(
         (colId) => !validGroupColIds.includes(colId),
       );
       if (nonGroupColIds.length > 0) {
         const nonGroupState = nonGroupColIds.map((colId: string) => ({
           colId,
-          rowGroup: false,
+          rowGroup: false, // Use false instead of undefined to explicitly remove grouping
         }));
         gridApi.applyColumnState({ state: nonGroupState });
       }
@@ -367,6 +407,8 @@ export function applyGridStateHelper(
     }
 
     if (sanitizedState.filter?.filterModel) {
+      // Filter out invalid column filters
+      // Allow auto-generated columns (ag-Grid-AutoColumn-*) to pass through
       const validFilterModel: any = {};
       const filterModel = sanitizedState.filter.filterModel;
       Object.keys(filterModel).forEach((colId) => {
@@ -383,6 +425,20 @@ export function applyGridStateHelper(
       }
     } else {
       gridApi.setFilterModel(null);
+    }
+
+    if (sanitizedState.filter?.advancedFilterModel) {
+      // Apply advanced filter model if available
+      try {
+        if (typeof gridApi.setAdvancedFilterModel === 'function') {
+          gridApi.setAdvancedFilterModel(
+            sanitizedState.filter
+              .advancedFilterModel as AdvancedFilterModel | null,
+          );
+        }
+      } catch (error) {
+        console.warn('Failed to apply advanced filter model:', error);
+      }
     }
 
     if (sanitizedState.pivot?.pivotColIds) {
@@ -429,7 +485,7 @@ export function applyGridStateHelper(
     }
 
     if (sanitizedState.pagination?.pageSize !== undefined) {
-      gridApi.setGridOption('paginationPageSize', sanitizedState.pagination.pageSize);
+      gridApi.paginationSetPageSize(sanitizedState.pagination.pageSize);
     }
 
     if (sanitizedState.pivot?.pivotMode !== undefined) {
@@ -437,6 +493,7 @@ export function applyGridStateHelper(
     }
 
     if (sanitizedState.columnGroup?.openColumnGroupIds) {
+      // Apply column group expansion state
       sanitizedState.columnGroup.openColumnGroupIds.forEach(
         (groupId: string) => {
           gridApi.setColumnGroupOpened(groupId, true);
@@ -444,19 +501,46 @@ export function applyGridStateHelper(
       );
     }
 
-    if (!sanitizedState.rowGroupExpansion?.expandedRowGroupIds) {
+    if (sanitizedState.rowGroupExpansion?.expandedRowGroupIds) {
+      // Apply row group expansion state - requires row IDs to be available
+      // This is typically handled by the grid automatically when data loads
+      console.log(
+        'Row group expansion state available but requires data to be loaded first',
+      );
+    } else {
       gridApi.collapseAll();
     }
+
+    // if (sanitizedState.expandAll !== undefined) {
+    //   // Expand or collapse all row groups based on the expandAll state
+    //   if (sanitizedState.expandAll) {
+    //     gridApi.expandAll();
+    //   } else {
+    //     gridApi.collapseAll();
+    //   }
+    // }
+
+    // if (sanitizedState.scroll) {
+    //   // Apply scroll position
+    //   if (sanitizedState.scroll.top !== undefined) {
+    //     gridApi.ensureIndexVisible(sanitizedState.scroll.top, 'top');
+    //   }
+    //   if (sanitizedState.scroll.left !== undefined) {
+    //     gridApi.ensureColumnVisible(sanitizedState.scroll.left as any);
+    //   }
+    // }
 
     if (sanitizedState.columnVisibility?.hiddenColIds !== undefined) {
       const validHidden = filterValidColIds(
         sanitizedState.columnVisibility.hiddenColIds,
       );
 
+      // Hide the specified columns
       if (validHidden.length > 0) {
         gridApi.setColumnsVisible(validHidden, false);
       }
 
+      // Explicitly show all other columns (important for tool panel to reflect state correctly)
       const allVisibleColIds = Array.from(validColIds).filter(
         (colId) => !validHidden.includes(colId),
       );
@@ -472,6 +556,17 @@ export function applyGridStateHelper(
         sanitizedState.focusedCell.rowPinned || null,
       );
     }
+
+    // if (
+    //   sanitizedState.rangeSelection?.cellRanges &&
+    //   sanitizedState.rangeSelection.cellRanges.length > 0
+    // ) {
+    //   // TODO Apply range selection (cell ranges)
+    // }
+
+    // if (sanitizedState.rowSelection !== undefined) {
+    //   // TODO Apply row selection
+    // }
   } catch (error) {
     console.error('Error applying grid state:', error);
   }
@@ -479,6 +574,9 @@ export function applyGridStateHelper(
 
 /**
  * Deterministic JSON serialization with sorted object keys.
+ * Ensures structurally equivalent objects produce identical strings
+ * regardless of property insertion order.
+ *
  */
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
@@ -505,6 +603,10 @@ function stableStringify(value: unknown): string {
 
 /**
  * Returns true when two grid states are semantically equivalent.
+ * Both states are sanitized (normalised and cleaned) against the same
+ * set of valid column IDs before comparison, so structural noise such
+ * as invalid/removed columns, undefined values, and key-ordering
+ * differences are ignored.
  */
 export function areGridStatesEqual(
   a: CustomGridState,

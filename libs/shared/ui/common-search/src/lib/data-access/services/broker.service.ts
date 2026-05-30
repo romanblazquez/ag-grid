@@ -1,91 +1,120 @@
-import { inject, Injectable, InjectionToken } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, map, Observable, of, tap } from 'rxjs';
-import { AbstractData, DataAccessFacadeService } from '@trade-platform/shared/ui/hds-common-search';
+import { BehaviorSubject, map, mergeMap, Observable, tap } from 'rxjs';
+import { Broker, BrokerDealerResponse } from '../../model/broker-dealer-response.interface';
 import { SearchService } from './search.service';
+import { Context } from '../../model/context.model';
+import { PreferenceService } from './preference.service';
 import { bestMatchSortFn } from '../../util/sorting-util';
-
-export const BROKER_SERVICE_URL = new InjectionToken<string>(
-  'BROKER_SERVICE_URL',
-);
-
-export interface BrokerData {
-  firmSourceId: number;
-  firmName: string;
-  firmCode: string;
-  [key: string]: unknown;
-}
-
-interface BrokerDealerResponse {
-  dealers: BrokerData[];
-}
+import { TreeNode } from '../../model/tree-result.model';
+import { transformBrokersToTreeNodes } from '../../util/transformation-util';
+import { ApiName, ServiceConfig } from '../../model/service-config.model';
+import { svcConfig } from '../../model/external-services.constant';
 
 @Injectable()
-export class BrokerService extends SearchService<BrokerData> {
-  override persistedData$: BehaviorSubject<BrokerData[]> = new BehaviorSubject<
-    BrokerData[]
-  >([]);
+export class BrokersService extends SearchService<any> {
+  public apiRecord: Record<ApiName, ServiceConfig> = svcConfig;
+  public override persistedData$: BehaviorSubject<Broker[]> =
+    new BehaviorSubject<Broker[]>([]);
 
-  private readonly http = inject(HttpClient);
-  private readonly url = inject(BROKER_SERVICE_URL, { optional: true });
-  private readonly dataCache = inject(DataAccessFacadeService);
+  public constructor(
+    private readonly http: HttpClient,
+    private readonly preferenceService: PreferenceService,
+  ) {
+    super();
+  }
 
-  search(query: string): Observable<BrokerData[]> {
-    return this.getAllBrokers().pipe(
-      map((brokers) =>
-        this.filterByQueryMultiselect(brokers, query, [
-          (b) => b.firmCode,
-          (b) => b.firmName,
-        ]).sort(bestMatchSortFn(query, (b) => b.firmCode)),
-      ),
+  public search(
+    query: string,
+    serviceContext: Context,
+  ): Observable<TreeNode[]> {
+    const dataPool: Observable<Broker[]> = this.persistedData$.value.length
+      ? this.persistedData$.asObservable()
+      : this.getAllBrokers();
+
+    const filterMethod = serviceContext.multiselect
+      ? this.filterByQueryMultiselect
+      : this.filterByQuerySingleSelect;
+
+    return dataPool.pipe(
+      map((brokers: Broker[]) => {
+        const filteredBrokers = filterMethod(brokers, query, [
+          (broker) => broker.shortName ?? '',
+          (broker) => broker.longName ?? '',
+        ]).sort(bestMatchSortFn(query, (broker) => broker.shortName ?? ''));
+
+        return transformBrokersToTreeNodes(filteredBrokers, serviceContext);
+      }),
     );
   }
 
-  loadInitialData(): Observable<BrokerData[]> {
+  public loadInitialData(): Observable<any> {
     return this.getAllBrokers().pipe(
       tap((brokers) => this.persistedData$.next(brokers)),
     );
   }
 
-  getInitialData(): Observable<BrokerData[]> {
-    const cachedValues = this.dataCache.getPreference<unknown>('broker');
-    if (!cachedValues.length) {
-      return this.search('');
-    }
-
-    const persisted = this.persistedData$.value;
-    if (persisted.length > 0) {
-      return of(
-        this.dataCache.getPreference<BrokerData>(
-          'broker',
-          persisted,
-          'firmSourceId',
-        ),
-      );
-    }
-
-    return this.loadInitialData().pipe(
-      map(() =>
-        this.dataCache.getPreference<BrokerData>(
-          'broker',
-          this.persistedData$.value,
-          'firmSourceId',
+  public getAllBrokers(): Observable<Broker[]> {
+    return this.apiRecord.GetBrokers.url.pipe(
+      mergeMap((url) =>
+        this.http.get<BrokerDealerResponse>(url).pipe(
+          map((response) => {
+            const raw: Broker[] = response.dealers ?? response.dealer ?? [];
+            // Normalise mock-server fields to the shortName/longName convention
+            return raw.map((b) => ({
+              ...b,
+              shortName: b.shortName ?? b.firmCode ?? '',
+              longName: b.longName ?? b.firmName ?? '',
+              idSrc: b.idSrc ?? String(b.firmSourceId ?? ''),
+            }));
+          }),
         ),
       ),
     );
   }
 
-  getAllBrokers(): Observable<BrokerData[]> {
-    if (!this.url) return of([]);
-    return this.http
-      .get<BrokerDealerResponse>(
-        `${this.url}?firm-activity=CRAAL2A&firm-status-code=ACTIVE`,
+  public override getInitialData(
+    serviceContext: Context,
+  ): Observable<TreeNode[]> {
+    return this.preferenceService
+      .getPreference<any>(
+        serviceContext.emitField,
+        serviceContext.preferenceContext,
       )
-      .pipe(map((res) => res.dealers ?? []));
+      .pipe(
+        map((items) => {
+          const existingTreeNodes: TreeNode[] = [];
+          const idSrcStrings: string[] = [];
+
+          items.forEach((item) => {
+            if (typeof item === 'string') {
+              idSrcStrings.push(item);
+            } else {
+              existingTreeNodes.push(item as TreeNode);
+            }
+          });
+
+          const brokers = this.persistedData$.value;
+          const treeNodesFromStrings = this.transformStringToTreeNode(
+            idSrcStrings,
+            brokers,
+            serviceContext,
+          );
+
+          return [...existingTreeNodes, ...treeNodesFromStrings];
+        }),
+      );
   }
 
-  toDataSourceFn() {
-    return (query: string): Observable<AbstractData[]> =>
-      query ? this.search(query) : this.getInitialData();
+  private transformStringToTreeNode(
+    idSrcStrings: string[],
+    brokers: Broker[],
+    serviceContext: Context,
+  ): TreeNode[] {
+    const brokersFromStrings: Broker[] = idSrcStrings
+      .map((idSrc) => brokers.find((b) => b.idSrc === idSrc))
+      .filter((broker): broker is Broker => broker !== undefined);
+
+    return transformBrokersToTreeNodes(brokersFromStrings, serviceContext);
   }
 }

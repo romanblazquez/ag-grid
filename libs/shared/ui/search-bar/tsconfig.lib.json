@@ -5,8 +5,14 @@
     "declaration": true,
     "declarationMap": true,
     "inlineSources": true,
-    "types": []
+    "types": [],
+    "target": "es5"
   },
-  "exclude": ["src/**/*.spec.ts", "src/test-setup.ts", "jest.config.ts"],
+  "exclude": [
+    "src/test-setup.ts",
+    "src/**/*.spec.ts",
+    "jest.config.ts",
+    "src/**/*.test.ts"
+  ],
   "include": ["src/**/*.ts"]
 }

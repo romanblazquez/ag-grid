@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2023 FMR Corp.
+ * All Rights Reserved.
+ *
+ * Fidelity Confidential Information.
+ * Created on 10/12/23, 1:50 PM
+ */
+
+import { SuggestibleSearchService } from '@fmr-pr000539/shared/data-access/suggestible-search';
+import {
+  PorfolioSuggestion,
+  SecuritySuggestion,
+} from '@fmr-pr000539/shared/data';
 import { SuggestibleSearchSuggestion } from './suggestible-search-bar.model';
 
 export const moduleName = 'Suggestible Search';
@@ -5,71 +18,75 @@ export const moduleName = 'Suggestible Search';
 export const placeholderSuffix = 'Search';
 
 /**
- * Possible search context domains.
- * Add additional enum members here as new search contexts are introduced.
- */
-export enum SearchContext {
-  Company = 'company',
-  Fund = 'fund',
-}
-
-/**
- * Placeholder label shown inside the search input for each context.
+ * Defines the list of place holder texts to show in the search bar
  */
 export const searchPlaceholder: Record<string, string> = {
-  [SearchContext.Company]: 'Symbol',
-  [SearchContext.Fund]: 'Fund',
+  company: `Symbol`,
+  fund: `Fund`,
 };
 
 /**
- * Column field keys used to render suggestion rows in the autocomplete panel.
+ * Defines the list of Search Suggestion fields to show as columns in the drop down
  */
 export const searchResultColumns: Record<string, Array<string>> = {
-  [SearchContext.Company]: ['ticker', 'bloombergId2', 'bloombergId', 'longName'],
-  [SearchContext.Fund]: ['shortName', 'fundNumber'],
+  company: ['ticker', 'bloombergId2', 'bloombergId', 'longName'],
+  fund: ['shortName', 'fundNumber'],
 };
 
 /**
- * Tooltip labels for each result column (aligned by index with searchResultColumns).
+ * Defines the list of Search Suggestion fields to show as columns in the drop down
  */
 export const searchResultColumnsToolTip: Record<string, Array<string>> = {
-  [SearchContext.Company]: [
+  company: [
     'FMR Ticker Symbol',
     'Bloomberg Primary Ticker',
     'Bloomberg Composite ID',
     'Security Name',
   ],
-  [SearchContext.Fund]: ['Fund Short Name', 'Fund Number'],
+  fund: ['FMR Fund Short Name', 'FMR Fund Number'],
 };
 
 /**
- * Column widths (in percent) for each result column in the autocomplete panel.
+ * Defines the widths in percentages for each column in the dropdown
  */
 export const searchResultColumnWidths: Record<string, Array<number>> = {
-  [SearchContext.Company]: [20, 20, 20, 40],
-  [SearchContext.Fund]: [50, 50],
+  company: [20, 20, 20, 40],
+  fund: [50, 50],
 };
 
 /**
- * Derives the display value shown in the input field after the user selects a suggestion.
- * Each context maps to a function that extracts the relevant display field.
+ * Defines the field to show in the input box upon selecting an option
  */
 export const displayFunction: Record<
   string,
   (suggestion: SuggestibleSearchSuggestion) => string
 > = {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  [SearchContext.Company]: (suggestion) =>
-    ((suggestion as Record<string, unknown>)?.['ticker'] as string) ?? '',
+  company: (suggestion) => (suggestion as SecuritySuggestion)?.ticker,
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  [SearchContext.Fund]: (suggestion) =>
-    ((suggestion as Record<string, unknown>)?.['shortName'] as string) ?? '',
+  fund: (suggestion) => (suggestion as PorfolioSuggestion)?.shortName,
 };
 
 /**
- * Whether the clear button should be rendered for each search context.
+ * Defines the api method name to be invoked for a given search context
  */
+export const suggestibleSearchEndpoint: Record<
+  string,
+  keyof SuggestibleSearchService
+> = {
+  company: 'getSecurity',
+  fund: 'getPortfolio',
+};
+
+/**
+ * Defines the possible domains of Suggestible Search capabilities
+ */
+export enum SearchContext {
+  Company = 'company',
+  Fund = 'fund',
+}
+
 export const enableClearButton: Record<string, boolean> = {
-  [SearchContext.Company]: true,
-  [SearchContext.Fund]: true,
+  company: true,
+  fund: true,
 };

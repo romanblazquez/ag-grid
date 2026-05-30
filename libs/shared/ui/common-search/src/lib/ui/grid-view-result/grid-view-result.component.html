@@ -1,0 +1,88 @@
+<mat-option class="search-results column-header" disabled="true">
+  <div
+    [ngStyle]="{ 'padding-left': viewContext.multiselect ? '40px' : '0px' }"
+    style="display: flex"
+  >
+    @for (
+      searchResultColumn of filterInvisibleFields(viewContext.detailFields);
+      track searchResultColumn;
+      let i = $index
+    ) {
+      <div
+        [style.width]="
+          viewContext.fieldWidths![searchResultColumn['name']] + '%'
+        "
+        style="align-content: center"
+      >
+        <div>
+          {{ viewContext.detailHeaders![i] }}
+        </div>
+      </div>
+    }
+  </div>
+</mat-option>
+@for (row of multiselectRows; track row) {
+  <mat-option class="search-results">
+    <!--  multiselect case-->
+    @if (viewContext.multiselect) {
+      <div [ngClass]="{ disabled: disableRule(row) }" class="grid-view-result">
+        <mat-checkbox
+          (change)="emitSelectedValues()"
+          [(ngModel)]="row.selected"
+          [disabled]="disableRule(row)"
+          class="example-margin"
+          commonSearchCheckbox
+        >
+        </mat-checkbox>
+        <div
+          (click)="onMultiselectRowClick(row, false)"
+          class="multiselect-row"
+        >
+          <ng-container
+            [ngTemplateOutletContext]="{ item: row.data }"
+            [ngTemplateOutlet]="rowTemplate"
+          ></ng-container>
+        </div>
+      </div>
+    }
+    <!--  not multiselect-->
+    @if (!viewContext.multiselect) {
+      <div
+        (click)="onSingleRowSelected(row)"
+        [ngClass]="{ disabled: disableRule(row) }"
+        class="grid-view-result"
+      >
+        <ng-container
+          [ngTemplateOutletContext]="{ item: row.data }"
+          [ngTemplateOutlet]="rowTemplate"
+        ></ng-container>
+      </div>
+    }
+  </mat-option>
+}
+
+<ng-template #rowTemplate let-searchResult="item">
+  @for (
+    searchResultColumn of filterInvisibleFields(viewContext.detailFields);
+    track searchResultColumn;
+    let i = $index
+  ) {
+    <div
+      [commonSearchTooltip]="{
+        column: viewContext.detailHeaders![i],
+        value: getSearchResultByColumn(
+          searchResult,
+          searchResultColumn['name']
+        ),
+      }"
+      [style.width]="viewContext.fieldWidths![searchResultColumn['name']] + '%'"
+      class="search-result-row"
+      data-cy="search-result-row"
+      style="align-content: center"
+    >
+      <div>
+        {{ getSearchResultByColumn(searchResult, searchResultColumn['name']) }}
+      </div>
+    </div>
+  }
+</ng-template>

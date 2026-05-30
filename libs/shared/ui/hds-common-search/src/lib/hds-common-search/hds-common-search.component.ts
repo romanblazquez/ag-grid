@@ -137,6 +137,10 @@ export class HdsCommonSearchComponent {
   readonly panelVisible = signal(false);
   readonly focused = signal(false);
   readonly lastTypedQuery = signal<string>('');
+  /** Mirrors the actual DOM input value — used for label-raised state so the
+   * float label stays up while the user has visible text, even if
+   * `lastTypedQuery` was reset by blur/panel-hide cleanup. */
+  readonly inputValue = signal<string>('');
   readonly csvMode = signal(false);
   readonly csvText = signal<string>('');
 
@@ -206,7 +210,8 @@ export class HdsCommonSearchComponent {
     () =>
       this.focused() ||
       this.chipsValue().length > 0 ||
-      this.lastTypedQuery().length > 0,
+      this.lastTypedQuery().length > 0 ||
+      this.inputValue().length > 0,
   );
 
   readonly gridDisableRule = (row: MultiselectRow): boolean =>
@@ -331,7 +336,9 @@ export class HdsCommonSearchComponent {
     toObservable(this.searchQuery)
       .pipe(
         distinctUntilChanged(),
-        debounceTime(300),
+        // 150ms is the sweet spot — fast enough to feel responsive,
+        // slow enough to avoid firing on every keystroke.
+        debounceTime(150),
         // Always require a non-empty query — the empty-input path is owned
         // by `openInitialPanel` (chevron / focus). Without this, callers
         // that pass `minLengthForInputValue=0` would let toObservable's
@@ -414,6 +421,9 @@ export class HdsCommonSearchComponent {
 
   onSearch(event: AutoCompleteCompleteEvent): void {
     const query = event.query ?? '';
+    // Track the live input value so labelRaised stays correct even after
+    // blur cleanup wipes lastTypedQuery.
+    this.inputValue.set(query);
     if (query.length > 0) this.lastTypedQuery.set(query);
     if (query.length === 0 && this.dropdown()) {
       this.openInitialPanel();
@@ -466,11 +476,14 @@ export class HdsCommonSearchComponent {
     this.isFocusedOut.set(true);
     this.focused.set(false);
     if (this.focusOutTimer !== null) clearTimeout(this.focusOutTimer);
+    // 200ms is enough to capture click-on-suggestion blur→focus race while
+    // feeling responsive on real blurs. 1000ms (old default) made the input
+    // feel "stuck" after typing.
     this.focusOutTimer = setTimeout(() => {
       this.focusOutTimer = null;
       this.panelVisible.set(false);
       this.cancelPendingQuery();
-    }, 1000);
+    }, 200);
   }
 
   toggleDropdown(event: MouseEvent): void {
@@ -1134,6 +1147,7 @@ export class HdsCommonSearchComponent {
   private clearInputBox(): void {
     const el = this.inputEl();
     if (el) el.value = '';
+    this.inputValue.set('');
   }
 
   onSelected(selection: CommonSearchSelection): void {
@@ -1310,6 +1324,7 @@ export class HdsCommonSearchComponent {
     this.myControl.setValue([]);
     this.searchQuery.set('');
     this.lastTypedQuery.set('');
+    this.inputValue.set('');
     this.clearEvent.emit([]);
     this.searchResults.set([]);
     this.currSelected.set([]);

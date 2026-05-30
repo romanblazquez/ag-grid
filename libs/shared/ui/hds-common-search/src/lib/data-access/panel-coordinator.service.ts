@@ -4,7 +4,7 @@ import { FormGroup } from '@angular/forms';
 /**
  * Coordinates "only one panel open at a time" within a form group. When a
  * panel acquires the slot, the previously held panel is asked to close so
- * that two `lib-hds-common-search` instances don't fan out their megamenus
+ * that two `fmr-pr000539-hds-common-search` instances don't fan out their megamenus
  * simultaneously.
  *
  * Keyed by `FormGroup` instance via a WeakMap so groups GC normally. Panels

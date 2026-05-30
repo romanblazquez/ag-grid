@@ -1,21 +1,16 @@
-import {
-  Directive,
-  Input,
-  OnInit,
-  DestroyRef,
-  inject,
-  signal,
-  computed,
-} from '@angular/core';
+import { Directive, Input, OnInit, DestroyRef, inject } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { GridViewModel } from '../models/grid-view.model';
+import { EqtCommonGridComponent } from '@fmr-pr000539/eqt-common-grid';
 import {
   getEmptyGridState,
   applyGridStateHelper,
   areGridStatesEqual,
   CustomGridState,
 } from '../data-access/grid-state/grid-state.utils';
-import { ColDef, GridApi, GridState, SortState } from 'ag-grid-community';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { ColDef, GridState, SortState } from '@ag-grid-community/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject } from 'rxjs';
 import {
   filter as rxFilter,
@@ -24,25 +19,10 @@ import {
   map,
 } from 'rxjs/operators';
 import defaultViewsData from '../data-access/defaults/defaultViews';
+import * as gridViewActions from '../state/actions/grid-view.actions';
+import { createGridSelectors } from '../state/reducers';
+import { safeDeepClone } from '@fmr-pr000539/shared/util/common';
 import { GridEditSessionService } from '../services/grid-edit-session.service';
-import { GridViewStore } from '../state/grid-view.store';
-import { GridViewService } from '../data-access/services/grid-view.service';
-
-/**
- * Minimal interface for the AG Grid host that the directive interacts with.
- * Replace `EqtCommonGridComponent` with this interface to decouple from proprietary packages.
- */
-export interface AgGridHostInterface {
-  gridId: string;
-  appName?: string;
-  gridApi: GridApi;
-  columnDefs: ColDef[];
-  stateChanged: Observable<GridState>;
-  sortChanged: Observable<SortState>;
-  gridReadyEvent: Observable<void>;
-  syncExpandCollapseState?: (api: GridApi) => void;
-  collapseAll?: () => void;
-}
 
 /* eslint-disable @angular-eslint/directive-selector */
 @Directive({
@@ -59,23 +39,14 @@ export class GridViewManagerDirective implements OnInit {
 
   public readonly defaultViews: GridViewModel[] = [...defaultViewsData];
 
-  private readonly store = inject(GridViewStore);
-  private readonly gridViewService = inject(GridViewService);
+  private readonly grid = inject(EqtCommonGridComponent);
+  private readonly store = inject(Store);
+  private readonly actions$ = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
   public readonly editSession = inject(GridEditSessionService);
 
-  // The host grid is injected at the element level — consumers must provide
-  // an AgGridHostInterface token or pass the grid reference via input.
-  // Keeping as optional to allow standalone usage without the host.
-  private grid: AgGridHostInterface | null = null;
+  private gridSelectors = createGridSelectors('');
 
-  public views = computed(() => this.store.getViews(this.resolvedId)());
-  public activeView = computed(
-    () => this.store.getSelectedView(this.resolvedId)(),
-  );
-  public isLoading = computed(() => this.store.getLoading(this.resolvedId)());
-
-  /** Observable adapters for template/pipe usage */
   public views$!: Observable<GridViewModel[]>;
   public activeView$!: Observable<GridViewModel | null>;
   public isLoading$!: Observable<boolean>;
@@ -86,15 +57,8 @@ export class GridViewManagerDirective implements OnInit {
 
   private readonly propagate$ = new Subject<void>();
 
-  /**
-   * Attach the AG Grid host component/interface so the directive can interact
-   * with the live grid. Call this from the host after it is ready.
-   */
-  public attachGrid(grid: AgGridHostInterface): void {
-    this.grid = grid;
-  }
-
   private getColumnDefs(): Array<{ colId: string }> {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!this.grid) return [];
 
     if (
@@ -113,35 +77,29 @@ export class GridViewManagerDirective implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.resolvedId = this.gridId || (this.grid?.gridId ?? '');
+    this.resolvedId = this.gridId || this.grid.gridId;
 
     if (!this.resolvedId.trim()) {
       throw new Error(
-        '[GridViewManager] A non-empty gridId is required. Set the directive gridId input or provide a non-empty id on the host grid component before initialization.',
+        '[GridViewManager] A non-empty gridId is required. Set the directive gridId input or provide a non-empty id on the host EqtCommonGridComponent before initialization.',
       );
     }
 
-    // Wire up observable adapters from signals
-    this.views$ = toObservable(this.store.getViews(this.resolvedId));
-    this.activeView$ = toObservable(
-      this.store.getSelectedView(this.resolvedId),
-    );
-    this.isLoading$ = toObservable(this.store.getLoading(this.resolvedId));
+    this.gridSelectors = createGridSelectors(this.resolvedId);
+    this.views$ = this.store.select(this.gridSelectors.getViews);
+    this.activeView$ = this.store.select(this.gridSelectors.getSelectedView);
+    this.isLoading$ = this.store.select(this.gridSelectors.getLoading);
 
-    if (!this.appName && this.grid?.appName) {
+    if (!this.appName && this.grid.appName) {
       this.appName = this.grid.appName;
     }
 
-    if (this.grid) {
-      this.grid.gridReadyEvent
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => this.onGridReady());
+    this.grid.gridReadyEvent
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.onGridReady());
 
-      this.subscribeToGridStateChanges();
-    }
-
-    // Subscribe to store mutations that should refresh the edit baseline
-    this.subscribeToBaselineRefreshSignals();
+    this.subscribeToGridStateChanges();
+    this.subscribeToBaselineRefreshActions();
   }
 
   private onGridReady(): void {
@@ -173,17 +131,14 @@ export class GridViewManagerDirective implements OnInit {
   }
 
   private registerFirstRowDataHandler(): void {
-    if (!this.grid) return;
     const rowDataHandler = (): void => {
-      this.grid!.gridApi.removeEventListener('rowDataUpdated', rowDataHandler);
+      this.grid.gridApi.removeEventListener('rowDataUpdated', rowDataHandler);
       this.propagate$.next();
     };
     this.grid.gridApi.addEventListener('rowDataUpdated', rowDataHandler);
   }
 
   private subscribeToGridStateChanges(): void {
-    if (!this.grid) return;
-
     this.grid.stateChanged
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((newState: GridState) => {
@@ -196,29 +151,27 @@ export class GridViewManagerDirective implements OnInit {
         if (!this.currentGridState) return;
         this.currentGridState = {
           ...this.currentGridState,
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           sort: newSort || undefined,
         };
       });
   }
 
-  /**
-   * Subscribe to store signals that should trigger an edit session baseline refresh.
-   * Replaces the NgRx `ofType(updateGridViewSuccess, createGridViewSuccess, commitDraftViewSuccess)` pipe.
-   */
-  private subscribeToBaselineRefreshSignals(): void {
-    // We refresh the baseline whenever the selected view changes identity
-    // (create/update/commit all cause a view identity change in the store).
-    this.activeView$
+  private subscribeToBaselineRefreshActions(): void {
+    this.actions$
       .pipe(
-        rxFilter((v): v is GridViewModel => v !== null && !v.isDraft),
-        distinctUntilChanged((a, b) => a.id === b.id),
+        ofType(
+          gridViewActions.updateGridViewSuccess,
+          gridViewActions.createGridViewSuccess,
+          gridViewActions.commitDraftViewSuccess,
+        ),
+        rxFilter(({ gridId }) => gridId === this.resolvedId),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.refreshBaselineFromGrid());
   }
 
   private refreshBaselineFromGrid(): void {
-    if (!this.grid) return;
     const validColIds = new Set<string>(
       this.grid.gridApi.getColumns()?.map((c) => c.getColId()) ?? [],
     );
@@ -227,24 +180,22 @@ export class GridViewManagerDirective implements OnInit {
   }
 
   private loadViews(): void {
-    if (!this.appName && this.grid?.appName) {
+    if (!this.appName && this.grid.appName) {
       this.appName = this.grid.appName;
     }
 
     const columnDefs = this.getColumnDefs();
 
-    this.store.setLoading(this.resolvedId, true);
-    this.gridViewService
-      .loadViews(this.resolvedId, columnDefs, this.appName)
-      .subscribe({
-        next: (views) => this.store.loadViewsSuccess(this.resolvedId, views),
-        error: (err: Error) =>
-          this.store.loadViewsFailure(this.resolvedId, err.message),
-      });
+    this.store.dispatch(
+      gridViewActions.loadGridViews({
+        gridId: this.resolvedId,
+        columnDefs,
+        appName: this.appName,
+      }),
+    );
   }
 
   private propagateToGrid(activeView: GridViewModel): void {
-    if (!this.grid) return;
     try {
       console.log(
         '[GridViewManager] Propagating active view to grid:',
@@ -265,26 +216,26 @@ export class GridViewManagerDirective implements OnInit {
       }
 
       this.editSession.suppressChanges(() => {
-        applyGridStateHelper(this.grid!.gridApi, getEmptyGridState());
+        applyGridStateHelper(this.grid.gridApi, getEmptyGridState());
 
-        const stateToApply = structuredClone(
+        const stateToApply = safeDeepClone(
           activeView.gridState,
         ) as CustomGridState;
         const hasExplicitOrder =
           (stateToApply.columnOrder?.orderedColIds?.length ?? 0) > 0;
         if (!hasExplicitOrder) {
-          const colDefOrder = this.grid!.columnDefs
+          const colDefOrder = this.grid.columnDefs
             .map((c: ColDef) => c.colId)
             .filter((id): id is string => Boolean(id));
           stateToApply.columnOrder = { orderedColIds: colDefOrder };
         }
 
-        applyGridStateHelper(this.grid!.gridApi, stateToApply);
+        applyGridStateHelper(this.grid.gridApi, stateToApply);
 
         if (stateToApply.expandAll) {
-          this.grid!.gridApi.expandAll();
+          this.grid.gridApi.expandAll();
         }
-        this.grid!.syncExpandCollapseState?.(this.grid!.gridApi);
+        this.grid.syncExpandCollapseState(this.grid.gridApi);
       });
 
       const postApplyState = this.grid.gridApi.getState() as CustomGridState;
@@ -296,9 +247,9 @@ export class GridViewManagerDirective implements OnInit {
           this.editSession.suppressChanges(() => {
             this.applyRowGroupExpansion(rowGroupIds);
           });
-          this.grid!.syncExpandCollapseState?.(this.grid!.gridApi);
+          this.grid.syncExpandCollapseState(this.grid.gridApi);
           const postExpandState =
-            this.grid!.gridApi.getState() as CustomGridState;
+            this.grid.gridApi.getState() as CustomGridState;
           this.editSession.commitBaseline(postExpandState, validColIds);
         }, 100);
       }
@@ -316,13 +267,14 @@ export class GridViewManagerDirective implements OnInit {
   }
 
   private applyRowGroupExpansion(expandedRowGroupIds: string[]): void {
-    if (!this.grid?.gridApi) return;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!this.grid.gridApi) return;
 
     console.log(
       '[GridViewManager] Applying row group expansion:',
       expandedRowGroupIds,
     );
-    this.grid.collapseAll?.();
+    this.grid.collapseAll();
 
     this.grid.gridApi.forEachNode((node) => {
       if (node.group && node.id && expandedRowGroupIds.includes(node.id)) {

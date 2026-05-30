@@ -1,27 +1,29 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { firstValueFrom, Observable, of, throwError } from 'rxjs';
+import { map, catchError, tap, switchMap } from 'rxjs/operators';
+import { IPrefV2Service } from '@fmr-pr000264/ames-ipref-v2-service';
 import { GridViewModel } from '../../models/grid-view.model';
 import {
   GridViewPreferenceConfig,
   GridViewPreferenceData,
 } from '../../models/grid-view-state.model';
-import { GridState } from 'ag-grid-community';
+import { RuntimeConfigExt } from '@fmr-pr000539/eqt-ames-conf-preset';
+import { GridState } from '@ag-grid-community/core';
 import { getAllDefaultViewsForApp } from '../defaults/defaultViews';
 import { createDefaultView } from './util/create-default-view.util';
 import { GridDefaultsConfigService } from './grid-defaults-config.service';
+import { safeJsonParse } from '@fmr-pr000539/shared/util/common';
 
 /**
- * Handles all localStorage read/write operations and data-normalisation helpers.
- * Replaces the original iPref-based implementation with localStorage persistence.
- *
- * Storage key convention: gvm:{appName}:{gridId}
+ * Handles all iPref read/write operations and data-normalisation helpers.
  */
 @Injectable({ providedIn: 'root' })
 export class GridViewStorageService {
   private readonly PREFERENCE_VERSION = 1;
 
   public constructor(
+    private readonly iprefService: IPrefV2Service,
+    private readonly runtimeEnvExtension: RuntimeConfigExt,
     private readonly gridDefaultsConfigService: GridDefaultsConfigService,
   ) {}
 
@@ -29,18 +31,26 @@ export class GridViewStorageService {
     gridId: string,
     appName?: string,
   ): Promise<GridState> {
-    const key = this.buildStorageKey(gridId, appName) + ':gridState';
+    const config = this.getConfig(gridId, appName);
     try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) {
-        const parsed: unknown = JSON.parse(raw);
-        if (parsed !== null && typeof parsed === 'object') {
-          return parsed as GridState;
-        }
+      const iPrefRes: unknown = await firstValueFrom(
+        this.iprefService.getPrefValue(
+          'EquityTrading',
+          config.node,
+          'gridState',
+        ),
+      );
+
+      if (iPrefRes !== null && typeof iPrefRes === 'object') {
+        return iPrefRes as GridState;
       }
+
+      console.warn(
+        'Invalid grid state format from iPref, returning empty state',
+      );
       return {};
     } catch (e: unknown) {
-      console.warn('Error fetching current grid state from localStorage:', e);
+      console.warn('Error fetching current grid state from iPref:', e);
       return {};
     }
   }
@@ -50,19 +60,28 @@ export class GridViewStorageService {
     columnDefs: Array<{ colId: string }>,
     appName?: string,
   ): Observable<GridViewModel[]> {
+    const config = this.getConfig(gridId, appName);
     const validColIds = new Set(columnDefs.map((col) => col.colId as string));
 
     return this.getSystemDefaults(appName, gridId).pipe(
-      switchMap((systemDefaults) => {
-        const raw = this.readFromStorage(gridId, appName);
-        return this.handleLoadedData(
-          raw,
-          gridId,
-          validColIds,
-          appName,
-          systemDefaults,
-        );
-      }),
+      switchMap((systemDefaults) =>
+        this.iprefService
+          .getPrefValue(config.appName, config.node, gridId)
+          .pipe(
+            switchMap((data: GridViewPreferenceData) =>
+              this.handleLoadedData(
+                data,
+                gridId,
+                validColIds,
+                appName,
+                systemDefaults,
+              ),
+            ),
+            catchError((error: Error) =>
+              this.handleLoadError(error, validColIds, systemDefaults),
+            ),
+          ),
+      ),
     );
   }
 
@@ -75,41 +94,28 @@ export class GridViewStorageService {
   }
 
   public deleteAllViews(gridId: string, appName?: string): Observable<void> {
-    try {
-      const key = this.buildStorageKey(gridId, appName);
-      localStorage.removeItem(key);
-      console.log('[GridViewStorage] All views deleted successfully');
-      return of(undefined);
-    } catch (error) {
-      console.error('[GridViewStorage] Error deleting all views:', error);
-      return throwError(() => new Error('Failed to delete all views from localStorage'));
-    }
+    return this.iprefService
+      .deleteAllPrefs('EquityTrading', this.getConfig(gridId, appName).node)
+      .pipe(
+        map(() => undefined),
+        tap(() =>
+          console.log('[GridViewStorage] All views deleted successfully'),
+        ),
+        catchError((error) => {
+          console.error('[GridViewStorage] Error deleting all views:', error);
+          return throwError(
+            () => new Error('Failed to delete all views from iPref'),
+          );
+        }),
+      );
   }
 
   public getConfig(gridId: string, appName?: string): GridViewPreferenceConfig {
     return {
-      appName: appName ?? 'default',
-      node: `gvm:${appName}`,
+      appName: 'EquityTrading',
+      node: `${this.runtimeEnvExtension.logicalEnvironment}:${appName}:GRID`,
       gridId: `${gridId}`,
     };
-  }
-
-  private buildStorageKey(gridId: string, appName?: string): string {
-    return `gvm:${appName ?? 'default'}:${gridId}`;
-  }
-
-  private readFromStorage(
-    gridId: string,
-    appName?: string,
-  ): GridViewPreferenceData | null {
-    try {
-      const key = this.buildStorageKey(gridId, appName);
-      const raw = localStorage.getItem(key);
-      if (raw === null) return null;
-      return JSON.parse(raw) as GridViewPreferenceData;
-    } catch {
-      return null;
-    }
   }
 
   private saveViewsInternal(
@@ -123,36 +129,49 @@ export class GridViewStorageService {
       'with views:',
       views,
     );
+    const config = this.getConfig(gridId, appName);
 
-    try {
-      const userViews = views.filter((v) => !v.isSystemDefault);
-      const selectedViewId = views.find((v) => v.isSelected)?.id ?? null;
+    const userViews = views.filter((v) => !v.isSystemDefault);
 
-      const data: GridViewPreferenceData = {
-        views: userViews,
-        version: this.PREFERENCE_VERSION,
-        selectedViewId,
-      };
+    const selectedViewId = views.find((v) => v.isSelected)?.id ?? null;
 
-      const key = this.buildStorageKey(gridId, appName);
-      localStorage.setItem(key, JSON.stringify(data));
-      console.log('[GridViewStorage] Views saved successfully');
-      return of(undefined);
-    } catch (error) {
-      console.error('[GridViewStorage] Error saving views:', error);
-      return throwError(() => new Error('Failed to save views to localStorage'));
-    }
+    const data: GridViewPreferenceData = {
+      views: userViews,
+      version: this.PREFERENCE_VERSION,
+      selectedViewId,
+    };
+    return this.iprefService
+      .savePref(
+        config.appName,
+        config.node,
+        config.gridId,
+        JSON.stringify(data),
+      )
+      .pipe(
+        map(() => undefined),
+        tap(() => console.log('[GridViewStorage] Views saved successfully')),
+        catchError((error) => {
+          console.error('[GridViewStorage] Error saving views:', error);
+          return throwError(() => new Error('Failed to save views to iPref'));
+        }),
+      );
   }
 
   private handleLoadedData(
-    data: GridViewPreferenceData | null,
+    data: GridViewPreferenceData,
     gridId: string,
     validColIds: Set<string>,
     appName?: string,
     systemDefaults: GridViewModel[] = [],
   ): Observable<GridViewModel[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!data) {
-      return this.handleFirstTimeLoad(gridId, systemDefaults, validColIds, appName);
+      return this.handleFirstTimeLoad(
+        gridId,
+        systemDefaults,
+        validColIds,
+        appName,
+      );
     }
 
     const parsed = this.parsePreferenceData(data);
@@ -166,7 +185,12 @@ export class GridViewStorageService {
 
     const userViews = parsed.views;
     if (userViews.length === 0) {
-      return this.handleEmptyViews(gridId, systemDefaults, validColIds, appName);
+      return this.handleEmptyViews(
+        gridId,
+        systemDefaults,
+        validColIds,
+        appName,
+      );
     }
 
     const allViews = this.reconcileViewSelection(
@@ -301,13 +325,13 @@ export class GridViewStorageService {
   private parsePreferenceData(
     data: GridViewPreferenceData,
   ): { views: GridViewModel[]; selectedViewId?: string | null } | null {
-    let parsed: unknown;
+    let parsed;
 
     if (typeof data === 'string') {
       try {
-        parsed = JSON.parse(data as string);
+        parsed = safeJsonParse(data);
       } catch (e: unknown) {
-        console.error('[GridViewStorage] Error parsing localStorage value:', e);
+        console.error('[GridViewStorage] Error parsing iPref value:', e);
         return null;
       }
     } else if (typeof data === 'object' && 'views' in data) {
@@ -321,5 +345,22 @@ export class GridViewStorageService {
     }
 
     return parsed as { views: GridViewModel[]; selectedViewId?: string | null };
+  }
+
+  private handleLoadError(
+    error: Error,
+    validColIds: Set<string>,
+    systemDefaults: GridViewModel[] = [],
+  ): Observable<GridViewModel[]> {
+    console.warn(
+      '[GridViewStorage] Error loading views from iPref:',
+      error.message,
+    );
+
+    return of(
+      systemDefaults.length > 0
+        ? systemDefaults
+        : createDefaultView(validColIds),
+    );
   }
 }

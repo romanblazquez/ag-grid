@@ -1,5 +1,6 @@
 @use '../../../../styles/tokens' as *;
 
+// Ensure long view names are truncated with ellipsis and fixed width
 .gvm-dropdown__row-label {
   display: inline-block;
   overflow: hidden;
@@ -110,6 +111,12 @@
   white-space: nowrap;
 }
 
+.gvm-dropdown__check {
+  color: $color-text-primary;
+  font-size: $font-size-lg;
+  margin-right: $side-padding;
+}
+
 .gvm-dropdown__meatballs {
   background: none;
   color: $color-text-primary;
@@ -123,6 +130,10 @@
   align-items: center;
   &:hover {
     background: rgba(25, 118, 210, 0.12);
+  }
+  mat-icon {
+    font-size: 22px;
+    color: $color-text-primary;
   }
 }
 
@@ -154,20 +165,17 @@
     &:hover {
       background: var(--p-content-hover-background);
     }
+    mat-icon {
+      font-size: 18px;
+      margin-top: 4px;
+    }
   }
   .gvm-dropdown__delete {
     color: $color-text-primary;
+    mat-icon {
+      color: $color-text-primary;
+    }
   }
-}
-
-.gvm-dropdown__meatballs-menu--left {
-  right: auto;
-  left: -170px;
-}
-
-.gvm-dropdown__meatballs-menu--right {
-  left: auto;
-  right: -170px;
 }
 
 .gvm-dropdown__divider {

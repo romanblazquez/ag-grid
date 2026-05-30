@@ -1,0 +1,20 @@
+.grid-view-result {
+  display: flex;
+  width: 100%;
+}
+
+.multiselect-row {
+  display: flex;
+  width: 100%;
+}
+
+.disabled {
+  pointer-events: none; // <---- key point
+  opacity: 0.3;
+}
+
+.search-result-row {
+  white-space: nowrap;
+  word-break: break-all;
+  overflow: hidden;
+}

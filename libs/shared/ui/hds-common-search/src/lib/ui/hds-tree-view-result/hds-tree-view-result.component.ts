@@ -98,12 +98,13 @@ export class HdsTreeViewResultComponent {
   }
 
   constructor() {
+    // Build tree structure only when search results change
     effect(() => {
       this.valueToNodeMap.clear();
       const emitKey = this.emitField();
       const disable = this.disableSelected();
       const preKeys = new Set(
-        this.preSelected().map((d) => d[emitKey] as string),
+        untracked(() => this.preSelected()).map((d) => d[emitKey] as string),
       );
       const nodes = this.searchResults().flatMap((n) =>
         this.toPrimeNodes(n, null, preKeys, emitKey, disable),
@@ -129,6 +130,33 @@ export class HdsTreeViewResultComponent {
       });
     });
 
+    // Update disabled state and sync selection when preSelected changes
+    effect(() => {
+      const pre = this.preSelected();
+      const emitKey = untracked(() => this.emitField());
+      const disable = untracked(() => this.disableSelected());
+      const nodes = untracked(() => this.treeNodes());
+      if (!nodes.length) return;
+      const preKeys = new Set(pre.map((d) => d[emitKey] as string));
+      this.updateDisabledState(nodes, preKeys, emitKey, disable);
+
+      if (preKeys.size > 0) {
+        const matchedLeaves: PrimeTreeNode[] = [];
+        this.valueToNodeMap.forEach((node) => {
+          if (node.children?.length) return;
+          const d = node.data as Record<string, unknown> | undefined;
+          if (d && preKeys.has(d[emitKey] as string))
+            matchedLeaves.push(node);
+        });
+        const currentLeaves = untracked(() => this.selectedNodes()).filter(
+          (n) => !n.children?.length,
+        );
+        const merged = new Set([...currentLeaves, ...matchedLeaves]);
+        const reconciled = this.reconcileSelection(nodes, merged);
+        untracked(() => this.selectedNodes.set(reconciled));
+      }
+    });
+
     effect(() => {
       const clear = this.clearSelection();
       if (clear) {
@@ -143,11 +171,11 @@ export class HdsTreeViewResultComponent {
         const norm = toggle.deselect.replace(/\s/g, '').toUpperCase();
         const node = this.valueToNodeMap.get(norm);
         if (node) {
-          const currentLeaves = this.selectedNodes().filter(
+          const currentLeaves = untracked(() => this.selectedNodes()).filter(
             (n) => !n.children?.length && n !== node,
           );
           const reconciled = this.reconcileSelection(
-            this.treeNodes(),
+            untracked(() => this.treeNodes()),
             new Set(currentLeaves),
           );
           this.selectedNodes.set(reconciled);
@@ -226,18 +254,16 @@ export class HdsTreeViewResultComponent {
     leafSelection: Set<PrimeTreeNode>,
   ): PrimeTreeNode[] {
     const result: PrimeTreeNode[] = [];
-    this.reconcileNodes(nodes, leafSelection, result);
+    const resultSet = new Set<PrimeTreeNode>();
+    this.reconcileNodes(nodes, leafSelection, result, resultSet);
     return result;
   }
 
-  /**
-   * Recursively reconcile nodes. Returns true if ALL leaves under this
-   * subtree are selected (so parent can be marked fully checked).
-   */
   private reconcileNodes(
     nodes: PrimeTreeNode[],
     leafSelection: Set<PrimeTreeNode>,
     result: PrimeTreeNode[],
+    resultSet: Set<PrimeTreeNode>,
   ): boolean {
     let allSelected = true;
     let anySelected = false;
@@ -248,17 +274,19 @@ export class HdsTreeViewResultComponent {
           node.children,
           leafSelection,
           result,
+          resultSet,
         );
         const childrenAnySelected = node.children.some(
           (c) =>
             c.partialSelected ||
-            result.includes(c) ||
+            resultSet.has(c) ||
             leafSelection.has(c),
         );
 
         if (childrenAllSelected) {
           node.partialSelected = false;
           result.push(node);
+          resultSet.add(node);
           anySelected = true;
         } else if (childrenAnySelected) {
           node.partialSelected = true;
@@ -271,6 +299,7 @@ export class HdsTreeViewResultComponent {
       } else {
         if (leafSelection.has(node)) {
           result.push(node);
+          resultSet.add(node);
           anySelected = true;
         } else {
           allSelected = false;
@@ -285,6 +314,36 @@ export class HdsTreeViewResultComponent {
     for (const n of nodes) {
       n.partialSelected = false;
       if (n.children?.length) this.clearPartialState(n.children);
+    }
+  }
+
+  private updateDisabledState(
+    nodes: PrimeTreeNode[],
+    preKeys: Set<string>,
+    emitKey: string,
+    disable: boolean,
+  ): void {
+    for (const node of nodes) {
+      if (node.children?.length) {
+        this.updateDisabledState(node.children, preKeys, emitKey, disable);
+        const allChildrenDisabled = node.children.every(
+          (c) => c.selectable === false,
+        );
+        const shouldDisable = disable && allChildrenDisabled;
+        node.selectable = !shouldDisable;
+        node.styleClass = shouldDisable ? 'hds-tree-disabled-row' : '';
+      } else {
+        const d = node.data as Record<string, unknown> | undefined;
+        const key = d?.[emitKey] as string | undefined;
+        const isPreSelected = key !== undefined && preKeys.has(key);
+        const items = d
+          ? Object.entries(d).map(([name, value]) => ({ name, value }))
+          : [];
+        const ruleDisabled = this.disableRule()({ items } as TreeNode);
+        const shouldDisable = ruleDisabled || (disable && isPreSelected);
+        node.selectable = !shouldDisable;
+        node.styleClass = shouldDisable ? 'hds-tree-disabled-row' : '';
+      }
     }
   }
 

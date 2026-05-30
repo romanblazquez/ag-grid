@@ -37,6 +37,10 @@ grid-view-header {
   margin-left: 0.5rem;
   flex-shrink: 0;
 }
+.gvm-header-bar__spinner {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
 
 .gvm-header-bar__right {
   flex: 0 1 auto;
@@ -131,10 +135,18 @@ grid-view-header {
         transition: color 0.2s ease;
       }
 
+      // Remove PrimeNG default styles
+      .p-button-icon-left,
+      .p-button-icon-right,
+      .p-button-icon-only {
+        margin: 0;
+      }
+
       .p-button-label {
         display: none;
       }
 
+      // Ensure icon is centered
       > * {
         display: flex;
         align-items: center;
@@ -142,20 +154,51 @@ grid-view-header {
       }
     }
 
+    // First button in group
     .p-button:first-child {
       border-top-left-radius: 22px;
       border-bottom-left-radius: 22px;
     }
 
+    // Last button in group
     .p-button:last-child {
       border-top-right-radius: 22px;
       border-bottom-right-radius: 22px;
     }
 
+    // Single button in group
     .p-button:only-child {
       border-radius: 22px;
     }
   }
+
+  button {
+    mat-icon {
+      font-size: 1rem;
+      height: 1.2rem;
+      width: 1rem;
+      color: $color-text-primary;
+    }
+
+    &.reset-active-filters {
+      background: #968528;
+      border-radius: 0;
+    }
+
+    &.active-filters {
+      border-radius: 0;
+
+      mat-icon {
+        color: #968528;
+      }
+    }
+  }
+}
+
+.gvm-header-bar__button-divider {
+  width: 1px;
+  height: 60%;
+  background-color: var(--p-content-border-color);
 }
 
 .gvm-header-bar__divider {

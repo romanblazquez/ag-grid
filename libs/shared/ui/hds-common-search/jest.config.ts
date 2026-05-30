@@ -2,7 +2,7 @@
 export default {
   displayName: 'shared-ui-hds-common-search',
   preset: '../../../../jest.preset.js',
-  setupFilesAfterEnach: ['<rootDir>/src/test-setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: '../../../../coverage/libs/shared/ui/hds-common-search',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [

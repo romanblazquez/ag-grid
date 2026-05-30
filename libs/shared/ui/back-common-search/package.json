@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/shared/ui/common-search",
+  "name": "@trade-platform/shared/ui/back-common-search",
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "^20.3.0",

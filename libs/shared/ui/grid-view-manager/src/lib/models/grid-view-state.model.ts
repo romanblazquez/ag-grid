@@ -47,7 +47,7 @@ export const GRID_VIEW_CONSTRAINTS = {
 } as const;
 
 /**
- * Configuration for storage
+ * Configuration for iPref storage
  */
 export interface GridViewPreferenceConfig {
   /** Application identifier */
@@ -61,7 +61,7 @@ export interface GridViewPreferenceConfig {
 }
 
 /**
- * Storage format for grid views
+ * Storage format for grid views in iPref
  */
 export interface GridViewPreferenceData {
   /** Collection of saved views */
@@ -71,7 +71,7 @@ export interface GridViewPreferenceData {
   version: number;
 
   /**
-   * Persisted id of the currently selected view.
+   * Persisted id of the currently selected view. This is used to restore the selected view on load.
    */
   selectedViewId?: string | null;
 }

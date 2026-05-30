@@ -24,7 +24,7 @@
         [panelStyleClass]="resolvedPanelClass()"
         [size]="size()"
         styleClass="hds-search-autocomplete"
-        [class.hds-search-autocomplete--collapsed]="collapsed() && !csvMode()"
+        [class.hds-search-autocomplete--collapsed]="showAsSummary() && !csvMode()"
         [class.ng-invalid]="myControl.invalid && myControl.dirty"
         [class.ng-dirty]="myControl.invalid && myControl.dirty"
         (completeMethod)="onSearch($event)"
@@ -105,32 +105,16 @@
         </ng-template>
       </p-autocomplete>
 
-      @if (collapsed() && !csvMode()) {
-        @if (showAsSummary()) {
-          <!-- Collapsed summary: "N Items" with tooltip -->
-          <span
-            class="hds-summary-chip"
-            [pTooltip]="overflowTooltip()"
-            tooltipPosition="top"
-            (dblclick)="onChipsDblClick()"
-          >{{ summaryLabel() }}</span>
-        } @else {
-          <!-- Individual chips with remove icon -->
-          <div
-            class="hds-chips-container"
-            (dblclick)="onChipsDblClick()"
-          >
-            @for (chip of chipsValue(); track chip) {
-              <span class="hds-chip">
-                <span class="hds-chip-label">{{ chip }}</span>
-                <span
-                  class="hds-chip-remove pi pi-times"
-                  (click)="onSelectedChipUnchecked(chip); $event.stopPropagation()"
-                ></span>
-              </span>
-            }
-          </div>
-        }
+      <!-- Summary overlay only when chips exceed maxVisibleChips. Individual
+           chips render inline via PrimeNG's native chip slot inside the input
+           row, so the typing input naturally shifts right as chips appear. -->
+      @if (showAsSummary() && !csvMode()) {
+        <span
+          class="hds-summary-chip"
+          [pTooltip]="overflowTooltip()"
+          tooltipPosition="top"
+          (dblclick)="onChipsDblClick()"
+        >{{ summaryLabel() }}</span>
       }
 
       @if (showClear() && chipsValue().length > 1 && !csvMode()) {

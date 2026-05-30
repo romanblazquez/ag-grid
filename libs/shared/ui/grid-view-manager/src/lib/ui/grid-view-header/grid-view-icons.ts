@@ -1,4 +1,5 @@
-// Replace HdsIconName (proprietary) with plain string type
+import { HdsIconName } from '@fmr-pr000264/hds-core-icons';
+
 export const HEADER_ICONS = {
   export: 'hds-download',
   expandAll: 'hds-chevron-down',
@@ -11,6 +12,6 @@ export const HEADER_ICONS = {
   filterUnfilled: 'hds-filter',
   sortOrdered: 'hds-list-ordered',
   sortUnordered: 'hds-list-unordered',
-} as const satisfies Record<string, string>;
+} as const satisfies Record<string, HdsIconName>;
 
 export type HeaderIcons = typeof HEADER_ICONS;
