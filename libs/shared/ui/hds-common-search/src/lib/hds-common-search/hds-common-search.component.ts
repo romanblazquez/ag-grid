@@ -407,9 +407,20 @@ export class HdsCommonSearchComponent {
           if (el && !el.value && query) el.value = query;
         });
         if (data.length === 0) {
-          this.myControl.setErrors({
-            errors: this.serviceContext()?.errorMessage,
-          });
+          // Only show "no matches" when the user has NO existing
+          // selections. If they already have valid chips, a "no matches"
+          // error on the current typed query is misleading — their
+          // form value is still valid.
+          if (this.currSelected().length === 0) {
+            this.myControl.setErrors({
+              errors: this.serviceContext()?.errorMessage,
+            });
+          } else {
+            this.clearStaleError();
+          }
+        } else {
+          // Results came back — clear any stale "no matches" error.
+          this.clearStaleError();
         }
       });
 
@@ -454,6 +465,9 @@ export class HdsCommonSearchComponent {
     this.inputValue.set(query);
     if (query.length > 0) {
       this.lastTypedQuery.set(query);
+      // User is typing again — clear any stale "no matches" error so it
+      // doesn't sit under a new in-flight query.
+      this.clearStaleError();
       // Reactive to typing: if the input is squeezed, scroll chips left
       // immediately so the user has typing room — same action as focus,
       // no waiting for re-focus. The helper is a no-op when input is
@@ -694,12 +708,24 @@ export class HdsCommonSearchComponent {
 
   /** Reset any typed-but-not-committed query so the next open starts fresh. */
   private cancelPendingQuery(): void {
+    // If the user typed a query that didn't match (no chip got added),
+    // wipe the typed text on blur so the next open starts clean. Chips
+    // (committed selections) are untouched. This is called from the
+    // 200ms blur timer and onPanelHide — both are "user is done"
+    // moments, so dropping the abandoned typed query is safe.
+    const hadUnresolvedQuery = this.lastTypedQuery().length > 0;
     this.searchQuery.set('');
     this.lastTypedQuery.set('');
     this.searchResults.set([]);
-    // Do NOT clear the DOM input here — that wipes text the user may still need.
-    // clearInputBox() is only appropriate on explicit resets (resetSearch/clearSearch)
-    // and after a confirmed selection.
+    if (hadUnresolvedQuery) {
+      this.clearInputBox();
+    }
+    // The "no matches" error from a prior typed query is stale once the
+    // user has moved on. Clear it whenever they have chips OR they just
+    // abandoned an unresolved query.
+    if (this.currSelected().length > 0 || hadUnresolvedQuery) {
+      this.clearStaleError();
+    }
   }
 
   onPanelMouseDown(event: MouseEvent): void {
@@ -1270,6 +1296,18 @@ export class HdsCommonSearchComponent {
     }
   }
 
+  /** Clear the `errors` key (the "no matches" / "Invalid X" message) from
+   * the form control, preserving any other unrelated errors. Called when
+   * the user resumes interaction (typing, selecting, getting fresh
+   * results) so a stale error from a prior search doesn't sit under the
+   * new state. */
+  private clearStaleError(): void {
+    const errs = this.myControl.errors;
+    if (!errs || !('errors' in errs)) return;
+    const { errors: _drop, ...rest } = errs;
+    this.myControl.setErrors(Object.keys(rest).length > 0 ? rest : null);
+  }
+
   /** Called on blur. Restore chip scroll to 0 so chips are visible from
    * the left edge when the input isn't focused. */
   private resetChipScroll(): void {
@@ -1296,6 +1334,9 @@ export class HdsCommonSearchComponent {
   }
 
   onSelected(selection: CommonSearchSelection): void {
+    // User picked something — any prior "no matches / invalid" error is
+    // now moot. Clear before applying the new selection.
+    this.clearStaleError();
     const prev = [...(this.myControl.value ?? [])];
     const isMultiSelect =
       !!this.serviceContext()?.multiselect || this.isTreeView();
@@ -1474,6 +1515,7 @@ export class HdsCommonSearchComponent {
     this.searchResults.set([]);
     this.currSelected.set([]);
     this.panelVisible.set(false);
+    this.clearStaleError();
     this.clearTrigger.set({});
     // Reset to undefined so a newly created grid/tree child doesn't see
     // a stale truthy value and fire its clear effect on mount.
